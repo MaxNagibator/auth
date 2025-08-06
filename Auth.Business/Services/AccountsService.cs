@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Identity;
 using Auth.Data.Entities;
+using Microsoft.AspNetCore.Identity;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -69,12 +69,14 @@ public partial class AccountsService(
     public async Task ChangePasswordAsync(string currentPassword, string newPassword)
     {
         var user = environment.AuthUser;
+
         if (user == null)
         {
             throw new BusinessException("Извините, но пользователь не указан.");
         }
 
         var result = await userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+
         if (result.Succeeded == false)
         {
             throw new IncorrectDataException($"Ошибки: {string.Join("; ", result.Errors.Select(error => error.Description))}");
@@ -149,6 +151,9 @@ public partial class AccountsService(
         return result.ToString();
     }
 
+    [GeneratedRegex("^[a-zA-Z0-9_-]+$", RegexOptions.Compiled)]
+    private static partial Regex UserNameRegex();
+
     private void SendEmail(string userName, string email, string confirmCode)
     {
         const string Title = "Подтверждение регистрации";
@@ -157,7 +162,4 @@ public partial class AccountsService(
         // TODO: Стоит ли добавлять новое письмо, если уже есть в очереди письмо на тот же email
         queueHolder.MailMessages.Enqueue(new(email, Title, body));
     }
-
-    [GeneratedRegex("^[a-zA-Z0-9_-]+$", RegexOptions.Compiled)]
-    private static partial Regex UserNameRegex();
 }

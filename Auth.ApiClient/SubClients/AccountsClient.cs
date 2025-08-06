@@ -32,6 +32,7 @@ public class AccountsClient(AuthClient apiClient) : ApiClientExecutor(apiClient)
         public string? Email { get; set; }
         public required string Password { get; set; }
     }
+
     public class ConfirmEmailRequest
     {
         public required string ConfirmCode { get; set; }

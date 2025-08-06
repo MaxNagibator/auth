@@ -37,7 +37,6 @@ finally
     LogManager.Shutdown();
 }
 
-
 public partial class Program
 {
     protected Program()

@@ -1,8 +1,8 @@
+using Auth.Business.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Auth.Business.Services;
 
 namespace Auth.Api.Tests;
 
@@ -26,6 +26,5 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
         builder.UseConfiguration(configRoot);
         builder.UseContentRoot(Directory.GetCurrentDirectory());
         builder.UseEnvironment(env);
-
     }
 }

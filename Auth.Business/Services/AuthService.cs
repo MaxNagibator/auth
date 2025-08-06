@@ -1,7 +1,7 @@
+using Auth.Data.Entities;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
-using Auth.Data.Entities;
 using OpenIddict.Abstractions;
 using System.Security.Claims;
 
@@ -9,8 +9,7 @@ namespace Auth.Business.Services;
 
 public class AuthService(
     UserManager<ApplicationUser> userManager,
-    SignInManager<ApplicationUser> signInManager,
-    ApplicationDbContext context)
+    SignInManager<ApplicationUser> signInManager)
 {
     public async Task<ClaimsIdentity> HandlePasswordGrantAsync(OpenIddictRequest request)
     {
@@ -37,6 +36,7 @@ public class AuthService(
         }
 
         var result = await signInManager.CheckPasswordSignInAsync(user, request.Password, true);
+
         if (result.Succeeded == false)
         {
             throw new PermissionException("Неверное имя пользователя или пароль.");

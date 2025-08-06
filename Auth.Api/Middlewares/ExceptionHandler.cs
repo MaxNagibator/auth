@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Diagnostics;
+﻿using Auth.Common.Exceptions;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using Auth.Common.Exceptions;
 
 namespace Auth.Api.Middlewares;
 
@@ -34,6 +34,7 @@ public class ExceptionHandler(IProblemDetailsService problemDetailsService, ILog
 
             default:
                 statusCode = StatusCodes.Status500InternalServerError;
+
                 problemDetails = new()
                 {
                     Status = StatusCodes.Status500InternalServerError,

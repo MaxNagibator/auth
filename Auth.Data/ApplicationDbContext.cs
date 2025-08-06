@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Auth.Data.Entities;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using System.Reflection;
 
 namespace Auth.Data;

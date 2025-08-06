@@ -1,6 +1,6 @@
-using Microsoft.Extensions.Options;
 using Auth.Business;
 using Auth.Common;
+using Microsoft.Extensions.Options;
 using System.Threading.Channels;
 using MailMessage = Auth.Business.Models.MailMessage;
 

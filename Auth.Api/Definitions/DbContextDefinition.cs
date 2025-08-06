@@ -1,5 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using Auth.Data;
+using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace Auth.Api.Definitions;
 
@@ -18,7 +19,8 @@ public class DbContextDefinition : AppDefinition
     public override void ConfigureApplication(WebApplication app)
     {
         var automigrate = app.Configuration["AUTO_MIGRATE"];
-        if (automigrate?.ToLower(System.Globalization.CultureInfo.InvariantCulture) == "true" || automigrate == "1")
+
+        if (automigrate?.ToLower(CultureInfo.InvariantCulture) == "true" || automigrate == "1")
         {
             app.Services.InitializeDatabaseContext();
         }

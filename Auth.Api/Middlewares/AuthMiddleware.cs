@@ -1,6 +1,6 @@
-using Microsoft.AspNetCore.Identity;
 using Auth.Business;
 using Auth.Data.Entities;
+using Microsoft.AspNetCore.Identity;
 using OpenIddict.Abstractions;
 
 namespace Auth.Api.Middlewares;
@@ -18,6 +18,7 @@ public class AuthMiddleware(RequestDelegate next)
         if (userId != null)
         {
             var user = await userManager.FindByIdAsync(userId);
+
             if (user != null)
             {
                 environment.AuthUser = user;

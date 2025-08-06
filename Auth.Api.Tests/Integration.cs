@@ -1,9 +1,8 @@
+using Auth.Data;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Auth.Api.BackgroundServices;
-using Auth.Data;
 using System.Collections.Concurrent;
 
 namespace Auth.Api.Tests;

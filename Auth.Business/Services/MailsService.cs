@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Options;
 using Auth.Business.Configs;
+using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
 using MailMessage = Auth.Business.Models.MailMessage;

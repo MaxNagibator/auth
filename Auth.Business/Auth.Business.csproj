@@ -1,16 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <OutputType>Library</OutputType>
-    </PropertyGroup>
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
 
-    <ItemGroup>
-        <ProjectReference Include="..\Auth.Common\Auth.Common.csproj" />
-        <ProjectReference Include="..\Auth.Data\Auth.Data.csproj" />
-    </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Auth.Common\Auth.Common.csproj" />
+    <ProjectReference Include="..\Auth.Data\Auth.Data.csproj" />
+  </ItemGroup>
 
-    <ItemGroup>
-        <PackageReference Include="OpenIddict.Server.AspNetCore" />
-    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="OpenIddict.Server.AspNetCore" />
+  </ItemGroup>
 
 </Project>

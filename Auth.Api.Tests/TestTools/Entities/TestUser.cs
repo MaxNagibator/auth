@@ -32,6 +32,19 @@ public class TestUser : TestObject
     /// </summary>
     public string Password { get; private set; }
 
+    public override void LocalSave()
+    {
+        if (IsNew)
+        {
+            Environment.ApiClient.RegisterAsync(UserName, Email, Password).Wait();
+
+            var dbUser = Environment.Context.Users
+                .Single(x => x.UserName == UserName);
+
+            Id = dbUser.Id;
+        }
+    }
+
     public TestUser SetPassword(string value)
     {
         Password = value;
@@ -48,18 +61,5 @@ public class TestUser : TestObject
     {
         Email = value;
         return this;
-    }
-
-    public override void LocalSave()
-    {
-        if (IsNew)
-        {
-            Environment.ApiClient.RegisterAsync(UserName, Email, Password).Wait();
-
-            var dbUser = Environment.Context.Users
-                .Single(x => x.UserName == UserName);
-
-            Id = dbUser.Id;
-        }
     }
 }

@@ -1,6 +1,6 @@
+using Auth.Api.Dto.Accounts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Auth.Api.Dto.Accounts;
 using OpenIddict.Validation.AspNetCore;
 
 namespace Auth.Api.Controllers;

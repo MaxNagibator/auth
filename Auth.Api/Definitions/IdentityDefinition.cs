@@ -1,6 +1,6 @@
-using Microsoft.AspNetCore.Identity;
 using Auth.Data;
 using Auth.Data.Entities;
+using Microsoft.AspNetCore.Identity;
 using OpenIddict.Abstractions;
 
 namespace Auth.Api.Definitions;

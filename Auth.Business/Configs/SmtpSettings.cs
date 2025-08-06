@@ -1,5 +1,3 @@
-using System.Security;
-
 namespace Auth.Business.Configs;
 
 public class SmtpSettings
