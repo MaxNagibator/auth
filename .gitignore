@@ -400,4 +400,4 @@ FodyWeavers.xsd
 .idea/
 
 # MoneyProject
-backend/Money.Api/appsettings.Development.json
+/Auth.Api/appsettings.Development.json
