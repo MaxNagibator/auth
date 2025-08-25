@@ -74,6 +74,7 @@ builder.Services.AddOpenIddict()
     });
 
 builder.Services.AddHostedService<Worker>();
+builder.Services.AddHostedService<EmailSenderBackgroundService>();
 
 var app = builder.Build();
 
