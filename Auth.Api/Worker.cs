@@ -51,6 +51,35 @@ public class Worker : IHostedService
                 },
             }, cancellationToken);
         }
+
+        if (await manager.FindByClientIdAsync("money-api", cancellationToken) == null)
+        {
+            await manager.CreateAsync(new()
+            {
+                ClientId = "money-api",
+                ConsentType = ConsentTypes.Explicit,
+                DisplayName = "Money API",
+                RedirectUris =
+                {
+                    new("https://localhost:7124/connect/callback"),
+                },
+                Permissions =
+                {
+                    Permissions.Endpoints.Authorization,
+                    Permissions.Endpoints.Logout,
+                    Permissions.Endpoints.Token,
+                    Permissions.GrantTypes.AuthorizationCode,
+                    Permissions.ResponseTypes.Code,
+                    Permissions.Scopes.Email,
+                    Permissions.Scopes.Profile,
+                    Permissions.Scopes.Roles,
+                },
+                Requirements =
+                {
+                    Requirements.Features.ProofKeyForCodeExchange,
+                },
+            }, cancellationToken);
+        }
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
