@@ -84,7 +84,7 @@ public class ExternalLoginModel : PageModel
 
         if (remoteError != null)
         {
-            ErrorMessage = $"Error from external provider: {remoteError}";
+            ErrorMessage = $"Ошибка внешнего провайдера: {remoteError}";
             return RedirectToPage("./Login", new { ReturnUrl = returnUrl });
         }
 
@@ -92,7 +92,7 @@ public class ExternalLoginModel : PageModel
 
         if (info == null)
         {
-            ErrorMessage = "Error loading external login information.";
+            ErrorMessage = "Не удалось загрузить данные внешнего входа.";
             return RedirectToPage("./Login", new { ReturnUrl = returnUrl });
         }
 
@@ -133,7 +133,7 @@ public class ExternalLoginModel : PageModel
 
         if (info == null)
         {
-            ErrorMessage = "Error loading external login information during confirmation.";
+            ErrorMessage = "Не удалось загрузить данные внешнего входа при подтверждении.";
             return RedirectToPage("./Login", new { ReturnUrl = returnUrl });
         }
 
@@ -168,8 +168,8 @@ public class ExternalLoginModel : PageModel
                         },
                         Request.Scheme);
 
-                    await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
-                        $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                    await _emailSender.SendEmailAsync(Input.Email, "Подтверждение почты",
+                        $"Подтвердите аккаунт: <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>перейдите по ссылке</a>.");
 
                     // If account confirmation is required, we need to show the link if we don't have a real email sender
                     if (_userManager.Options.SignIn.RequireConfirmedAccount)
@@ -204,7 +204,7 @@ public class ExternalLoginModel : PageModel
         }
         catch
         {
-            throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " + $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor, or alternatively " + $"override the external login page in /Areas/Identity/Pages/Account/ExternalLogin.cshtml");
+            throw new InvalidOperationException($"Не удалось создать экземпляр '{nameof(ApplicationUser)}'. " + $"Убедитесь, что '{nameof(ApplicationUser)}' не абстрактный класс и имеет конструктор без параметров, либо переопределите страницу внешнего входа.");
         }
     }
 
@@ -212,7 +212,7 @@ public class ExternalLoginModel : PageModel
     {
         if (!_userManager.SupportsUserEmail)
         {
-            throw new NotSupportedException("The default UI requires a user store with email support.");
+            throw new NotSupportedException("Интерфейсу по умолчанию нужен UserStore с поддержкой почты.");
         }
 
         return (IUserEmailStore<ApplicationUser>)_userStore;
@@ -230,6 +230,7 @@ public class ExternalLoginModel : PageModel
         /// </summary>
         [Required]
         [EmailAddress]
+        [Display(Name = "Почта")]
         public string Email { get; set; }
     }
 }

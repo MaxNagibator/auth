@@ -40,14 +40,14 @@ public class GenerateRecoveryCodesModel : PageModel
 
         if (user == null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound($"Не удалось загрузить пользователя с ID '{_userManager.GetUserId(User)}'.");
         }
 
         var isTwoFactorEnabled = await _userManager.GetTwoFactorEnabledAsync(user);
 
         if (!isTwoFactorEnabled)
         {
-            throw new InvalidOperationException("Cannot generate recovery codes for user because they do not have 2FA enabled.");
+            throw new InvalidOperationException("Нельзя создать коды восстановления: 2FA не включена.");
         }
 
         return Page();
@@ -59,7 +59,7 @@ public class GenerateRecoveryCodesModel : PageModel
 
         if (user == null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound($"Не удалось загрузить пользователя с ID '{_userManager.GetUserId(User)}'.");
         }
 
         var isTwoFactorEnabled = await _userManager.GetTwoFactorEnabledAsync(user);
@@ -67,14 +67,14 @@ public class GenerateRecoveryCodesModel : PageModel
 
         if (!isTwoFactorEnabled)
         {
-            throw new InvalidOperationException("Cannot generate recovery codes for user as they do not have 2FA enabled.");
+            throw new InvalidOperationException("Нельзя создать коды восстановления: 2FA не включена.");
         }
 
         var recoveryCodes = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10);
         RecoveryCodes = recoveryCodes.ToArray();
 
         _logger.LogInformation("User with ID '{UserId}' has generated new 2FA recovery codes.", userId);
-        StatusMessage = "You have generated new recovery codes.";
+        StatusMessage = "Созданы новые коды восстановления.";
         return RedirectToPage("./ShowRecoveryCodes");
     }
 }

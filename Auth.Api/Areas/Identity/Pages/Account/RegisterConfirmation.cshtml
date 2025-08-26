@@ -1,7 +1,7 @@
 ﻿@page
 @model RegisterConfirmationModel
 @{
-    ViewData["Title"] = "Register confirmation";
+    ViewData["Title"] = "Подтверждение регистрации";
 }
 
 <h1>@ViewData["Title"]</h1>
@@ -9,18 +9,34 @@
     if (Model.DisplayConfirmAccountLink)
     {
         <p>
-            This app does not currently have a real email sender registered, see <a
-                href="https://aka.ms/aspaccountconf">these docs</a> for how to configure a real email sender.
-            Normally this would be emailed: <a id="confirm-link"
-                                               href="@Model.EmailConfirmationUrl">Click here to
-                                                                                  confirm your
-                                                                                  account</a>
+            Здесь нет реальной отправки почты. Как настроить — см. <a
+                href="https://aka.ms/aspaccountconf">документацию</a>.
+            Обычно вы бы получили письмо: <a id="confirm-link"
+                                             href="@Model.EmailConfirmationUrl">Подтвердить аккаунт</a>
         </p>
     }
     else
     {
-        <p>
-            Please check your email to confirm your account.
-        </p>
+        <div class="alert alert-info"
+             role="alert">
+            <h4 class="alert-heading">Регистрация почти завершена!</h4>
+            <p>
+                Мы отправили письмо с кодом подтверждения на адрес <strong>@Model.Email</strong>.
+            </p>
+            <hr>
+            <p class="mb-0">
+                Проверьте свою почту и введите полученный код для завершения регистрации.
+                Если письмо не пришло, проверьте папку "Спам".
+            </p>
+        </div>
+
+        <div class="text-center mt-4">
+            <a asp-page="./ConfirmEmailCode"
+               asp-route-email="@Model.Email"
+               asp-route-returnUrl="@ViewData["ReturnUrl"]"
+               class="btn btn-primary btn-lg">
+                Ввести код подтверждения
+            </a>
+        </div>
     }
 }

@@ -5,26 +5,26 @@
 <ul class="nav nav-pills flex-column">
     <li class="nav-item"><a class="nav-link @ManageNavPages.IndexNavClass(ViewContext)"
                             id="profile"
-                            asp-page="./Index">Profile</a>
+                            asp-page="./Index">Профиль</a>
     </li>
     <li class="nav-item"><a class="nav-link @ManageNavPages.EmailNavClass(ViewContext)"
                             id="email"
-                            asp-page="./Email">Email</a>
+                            asp-page="./Email">Почта</a>
     </li>
     <li class="nav-item"><a class="nav-link @ManageNavPages.ChangePasswordNavClass(ViewContext)"
                             id="change-password"
-                            asp-page="./ChangePassword">Password</a></li>
+                            asp-page="./ChangePassword">Пароль</a></li>
     @if (hasExternalLogins)
     {
         <li id="external-logins"
             class="nav-item"><a id="external-login"
                                 class="nav-link @ManageNavPages.ExternalLoginsNavClass(ViewContext)"
-                                asp-page="./ExternalLogins">External logins</a></li>
+                                asp-page="./ExternalLogins">Внешние входы</a></li>
     }
     <li class="nav-item"><a class="nav-link @ManageNavPages.TwoFactorAuthenticationNavClass(ViewContext)"
                             id="two-factor"
-                            asp-page="./TwoFactorAuthentication">Two-factor authentication</a></li>
+                            asp-page="./TwoFactorAuthentication">Двухфакторная аутентификация</a></li>
     <li class="nav-item"><a class="nav-link @ManageNavPages.PersonalDataNavClass(ViewContext)"
                             id="personal-data"
-                            asp-page="./PersonalData">Personal data</a></li>
+                            asp-page="./PersonalData">Персональные данные</a></li>
 </ul>

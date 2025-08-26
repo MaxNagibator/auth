@@ -67,7 +67,7 @@ public class EnableAuthenticatorModel : PageModel
 
         if (user == null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound($"Не удалось загрузить пользователя с ID '{_userManager.GetUserId(User)}'.");
         }
 
         await LoadSharedKeyAndQrCodeUriAsync(user);
@@ -81,7 +81,7 @@ public class EnableAuthenticatorModel : PageModel
 
         if (user == null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound($"Не удалось загрузить пользователя с ID '{_userManager.GetUserId(User)}'.");
         }
 
         if (!ModelState.IsValid)
@@ -97,7 +97,7 @@ public class EnableAuthenticatorModel : PageModel
 
         if (!is2faTokenValid)
         {
-            ModelState.AddModelError("Input.Code", "Verification code is invalid.");
+            ModelState.AddModelError("Input.Code", "Неверный код.");
             await LoadSharedKeyAndQrCodeUriAsync(user);
             return Page();
         }
@@ -106,7 +106,7 @@ public class EnableAuthenticatorModel : PageModel
         var userId = await _userManager.GetUserIdAsync(user);
         _logger.LogInformation("User with ID '{UserId}' has enabled 2FA with an authenticator app.", userId);
 
-        StatusMessage = "Your authenticator app has been verified.";
+        StatusMessage = "Приложение-аутентификатор подтверждено.";
 
         if (await _userManager.CountRecoveryCodesAsync(user) == 0)
         {
@@ -174,9 +174,9 @@ public class EnableAuthenticatorModel : PageModel
         /// directly from your code. This API may change or be removed in future releases.
         /// </summary>
         [Required]
-        [StringLength(7, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+        [StringLength(7, ErrorMessage = "Длина {0} должна быть от {2} до {1} символов.", MinimumLength = 6)]
         [DataType(DataType.Text)]
-        [Display(Name = "Verification Code")]
+        [Display(Name = "Код подтверждения")]
         public string Code { get; set; }
     }
 }

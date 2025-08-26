@@ -2,10 +2,9 @@
 @model Auth.Api.ViewModels.Authorization.AuthorizeViewModel
 
 <div class="jumbotron">
-    <h1>Authorization</h1>
+    <h1>Доступ к данным</h1>
 
-    <p class="lead text-left">Do you want to grant <strong>@Model.ApplicationName</strong> access to your data? (scopes
-                              requested: @Model.Scope)</p>
+    <p class="lead text-left">Открыть доступ для <strong>@Model.ApplicationName</strong>? Запрошены права: @Model.Scope</p>
 
     <form asp-controller="Authorization"
           asp-action="Authorize"
@@ -20,12 +19,10 @@
         <input class="btn btn-lg btn-success"
                name="submit.Accept"
                type="submit"
-               value="Yes" />
+               value="Да" />
         <input class="btn btn-lg btn-danger"
                name="submit.Deny"
                type="submit"
-               value="No" />
+               value="Нет" />
     </form>
 </div>
-
-

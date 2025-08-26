@@ -1,7 +1,7 @@
 ﻿@page
 @model ResetAuthenticatorModel
 @{
-    ViewData["Title"] = "Reset authenticator key";
+    ViewData["Title"] = "Сброс ключа аутентификатора";
     ViewData["ActivePage"] = ManageNavPages.TwoFactorAuthentication;
 }
 
@@ -12,12 +12,10 @@
      role="alert">
     <p>
         <span class="glyphicon glyphicon-warning-sign"></span>
-        <strong>If you reset your authenticator key your authenticator app will not work until you reconfigure
-                it.</strong>
+        <strong>После сброса ключа приложение не будет работать, пока вы его не настроите заново.</strong>
     </p>
     <p>
-        This process disables 2FA until you verify your authenticator app.
-        If you do not complete your authenticator app configuration you may lose access to your account.
+        На время процесса 2FA будет отключена. Если не завершите настройку, можете потерять доступ к аккаунту.
     </p>
 </div>
 <div>
@@ -25,7 +23,7 @@
           method="post">
         <button id="reset-authenticator-button"
                 class="btn btn-danger"
-                type="submit">Reset authenticator key
+                type="submit">Сбросить ключ
         </button>
     </form>
 </div>

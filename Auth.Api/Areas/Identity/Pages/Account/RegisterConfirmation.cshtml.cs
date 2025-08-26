@@ -6,8 +6,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.WebUtilities;
-using System.Text;
 
 namespace Auth.Api.Areas.Identity.Pages.Account;
 
@@ -54,30 +52,11 @@ public class RegisterConfirmationModel : PageModel
 
         if (user == null)
         {
-            return NotFound($"Unable to load user with email '{email}'.");
+            return NotFound($"Не удалось найти пользователя с почтой '{email}'.");
         }
 
         Email = email;
-        // Once you add a real email sender, you should remove this code that lets you confirm the account
-        DisplayConfirmAccountLink = true;
-
-        if (DisplayConfirmAccountLink)
-        {
-            var userId = await _userManager.GetUserIdAsync(user);
-            var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-
-            EmailConfirmationUrl = Url.Page("/Account/ConfirmEmail",
-                null,
-                new
-                {
-                    area = "Identity",
-                    userId,
-                    code,
-                    returnUrl,
-                },
-                Request.Scheme);
-        }
+        DisplayConfirmAccountLink = false;
 
         return Page();
     }

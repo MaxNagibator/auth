@@ -96,7 +96,7 @@ public class LoginModel : PageModel
                 return RedirectToPage("./Lockout");
             }
 
-            ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+            ModelState.AddModelError(string.Empty, "Неверный логин или пароль.");
             return Page();
         }
 
@@ -116,6 +116,7 @@ public class LoginModel : PageModel
         /// </summary>
         [Required]
         [EmailAddress]
+        [Display(Name = "Почта")]
         public string Email { get; set; }
 
         /// <summary>
@@ -124,13 +125,14 @@ public class LoginModel : PageModel
         /// </summary>
         [Required]
         [DataType(DataType.Password)]
+        [Display(Name = "Пароль")]
         public string Password { get; set; }
 
         /// <summary>
         /// This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
         /// directly from your code. This API may change or be removed in future releases.
         /// </summary>
-        [Display(Name = "Remember me?")]
+        [Display(Name = "Запомнить меня")]
         public bool RememberMe { get; set; }
     }
 }

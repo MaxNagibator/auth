@@ -53,8 +53,8 @@ public class ForgotPasswordModel : PageModel
                 Request.Scheme);
 
             await _emailSender.SendEmailAsync(Input.Email,
-                "Reset Password",
-                $"Please reset your password by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                "Сброс пароля",
+                $"Сбросьте пароль: <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>перейдите по ссылке</a>.");
 
             return RedirectToPage("./ForgotPasswordConfirmation");
         }
@@ -74,6 +74,7 @@ public class ForgotPasswordModel : PageModel
         /// </summary>
         [Required]
         [EmailAddress]
+        [Display(Name = "Почта")]
         public string Email { get; set; }
     }
 }

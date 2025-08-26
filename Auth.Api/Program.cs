@@ -1,9 +1,12 @@
 ﻿using Auth.Api;
+using Auth.Api.BackgroundServices;
 using Auth.Api.Data;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using Quartz;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -73,6 +76,12 @@ builder.Services.AddOpenIddict()
         options.UseAspNetCore();
     });
 
+builder.Services.AddSingleton<QueueHolder>();
+builder.Services.AddSingleton<IEmailSender>(x => x.GetRequiredService<QueueHolder>());
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection(nameof(SmtpSettings)));
+builder.Services.Configure<EmailSenderSettings>(builder.Configuration.GetSection(nameof(EmailSenderSettings)));
+builder.Services.AddSingleton<IMailsService, MailsService>();
+
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddHostedService<EmailSenderBackgroundService>();
 
@@ -82,7 +91,7 @@ var app = builder.Build();
 
 var automigrate = app.Configuration["AUTO_MIGRATE"];
 
-if (automigrate?.ToLower(System.Globalization.CultureInfo.InvariantCulture) == "true" || automigrate == "1")
+if (automigrate?.ToLower(CultureInfo.InvariantCulture) == "true" || automigrate == "1")
 {
     using var scope = app.Services.CreateScope();
     using var applicationDbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
