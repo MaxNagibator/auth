@@ -1,7 +1,7 @@
 ﻿@page
 @model EmailModel
 @{
-    ViewData["Title"] = "Manage Email";
+    ViewData["Title"] = "Почта";
     ViewData["ActivePage"] = ManageNavPages.Email;
 }
 
@@ -20,7 +20,7 @@
                 <div class="form-floating mb-3 input-group">
                     <input asp-for="Email"
                            class="form-control"
-                           placeholder="Please enter your email."
+                           placeholder="Введите почту"
                            disabled />
                     <div class="input-group-append">
                         <span class="h-100 input-group-text text-success font-weight-bold">✓</span>
@@ -34,14 +34,14 @@
                 <div class="form-floating mb-3">
                     <input asp-for="Email"
                            class="form-control"
-                           placeholder="Please enter your email."
+                           placeholder="Введите почту"
                            disabled />
                     <label asp-for="Email"
                            class="form-label"></label>
                     <button id="email-verification"
                             type="submit"
                             asp-page-handler="SendVerificationEmail"
-                            class="btn btn-link">Send verification email
+                            class="btn btn-link">Выслать подтверждение
                     </button>
                 </div>
             }
@@ -50,7 +50,7 @@
                        class="form-control"
                        autocomplete="email"
                        aria-required="true"
-                       placeholder="Please enter new email." />
+                       placeholder="Новая почта" />
                 <label asp-for="Input.NewEmail"
                        class="form-label"></label>
                 <span asp-validation-for="Input.NewEmail"
@@ -59,7 +59,7 @@
             <button id="change-email-button"
                     type="submit"
                     asp-page-handler="ChangeEmail"
-                    class="w-100 btn btn-lg btn-primary">Change email
+                    class="w-100 btn btn-lg btn-primary">Изменить почту
             </button>
         </form>
     </div>

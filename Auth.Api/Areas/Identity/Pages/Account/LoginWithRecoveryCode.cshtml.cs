@@ -85,7 +85,7 @@ public class LoginWithRecoveryCodeModel : PageModel
         }
 
         _logger.LogWarning("Invalid recovery code entered for user with ID '{UserId}' ", user.Id);
-        ModelState.AddModelError(string.Empty, "Invalid recovery code entered.");
+        ModelState.AddModelError(string.Empty, "Неверный код восстановления.");
         return Page();
     }
 
@@ -102,7 +102,7 @@ public class LoginWithRecoveryCodeModel : PageModel
         [BindProperty]
         [Required]
         [DataType(DataType.Text)]
-        [Display(Name = "Recovery Code")]
+        [Display(Name = "Код восстановления")]
         public string RecoveryCode { get; set; }
     }
 }

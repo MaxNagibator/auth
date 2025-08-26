@@ -38,7 +38,7 @@ public class ConfirmEmailChangeModel : PageModel
 
         if (user == null)
         {
-            return NotFound($"Unable to load user with ID '{userId}'.");
+            return NotFound($"Не удалось загрузить пользователя с ID '{userId}'.");
         }
 
         code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
@@ -46,7 +46,7 @@ public class ConfirmEmailChangeModel : PageModel
 
         if (!result.Succeeded)
         {
-            StatusMessage = "Error changing email.";
+            StatusMessage = "Ошибка при смене почты.";
             return Page();
         }
 
@@ -56,12 +56,12 @@ public class ConfirmEmailChangeModel : PageModel
 
         if (!setUserNameResult.Succeeded)
         {
-            StatusMessage = "Error changing user name.";
+            StatusMessage = "Ошибка при смене имени пользователя.";
             return Page();
         }
 
         await _signInManager.RefreshSignInAsync(user);
-        StatusMessage = "Thank you for confirming your email change.";
+        StatusMessage = "Почта подтверждена.";
         return Page();
     }
 }

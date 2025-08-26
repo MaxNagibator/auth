@@ -2,7 +2,7 @@
 @using Microsoft.AspNetCore.Authentication
 @model RegisterModel
 @{
-    ViewData["Title"] = "Register";
+    ViewData["Title"] = "Регистрация";
 }
 
 <h1>@ViewData["Title"]</h1>
@@ -12,7 +12,7 @@
         <form id="registerForm"
               asp-route-returnUrl="@Model.ReturnUrl"
               method="post">
-            <h2>Create a new account.</h2>
+            <h2>Создать аккаунт.</h2>
             <hr />
             <div asp-validation-summary="ModelOnly"
                  class="text-danger"
@@ -23,7 +23,7 @@
                        autocomplete="username"
                        aria-required="true"
                        placeholder="name@example.com" />
-                <label asp-for="Input.Email">Email</label>
+                <label asp-for="Input.Email">Почта</label>
                 <span asp-validation-for="Input.Email"
                       class="text-danger"></span>
             </div>
@@ -33,7 +33,7 @@
                        autocomplete="new-password"
                        aria-required="true"
                        placeholder="password" />
-                <label asp-for="Input.Password">Password</label>
+                <label asp-for="Input.Password">Пароль</label>
                 <span asp-validation-for="Input.Password"
                       class="text-danger"></span>
             </div>
@@ -43,30 +43,27 @@
                        autocomplete="new-password"
                        aria-required="true"
                        placeholder="password" />
-                <label asp-for="Input.ConfirmPassword">Confirm Password</label>
+                <label asp-for="Input.ConfirmPassword">Повторите пароль</label>
                 <span asp-validation-for="Input.ConfirmPassword"
                       class="text-danger"></span>
             </div>
             <button id="registerSubmit"
                     type="submit"
-                    class="w-100 btn btn-lg btn-primary">Register
+                    class="w-100 btn btn-lg btn-primary">Зарегистрироваться
             </button>
         </form>
     </div>
     <div class="col-md-6 col-md-offset-2">
         <section>
-            <h3>Use another service to register.</h3>
+            <h3>Зарегистрироваться через другой сервис.</h3>
             <hr />
             @{
                 if ((Model.ExternalLogins?.Count ?? 0) == 0)
                 {
                     <div>
                         <p>
-                            There are no external authentication services configured. See this <a
-                                href="https://go.microsoft.com/fwlink/?LinkID=532715">article
-                                                                                      about setting up this ASP.NET
-                                                                                      application to support logging in
-                                                                                      via external services</a>.
+                            Внешние сервисы входа не настроены. Подробнее в этой <a
+                                href="https://go.microsoft.com/fwlink/?LinkID=532715">статье</a>.
                         </p>
                     </div>
                 }
@@ -85,7 +82,7 @@
                                             class="btn btn-primary"
                                             name="provider"
                                             value="@provider.Name"
-                                            title="Log in using your @provider.DisplayName account">@provider.DisplayName</button>
+                                            title="Войти через @provider.DisplayName">@provider.DisplayName</button>
                                 }
                             </p>
                         </div>

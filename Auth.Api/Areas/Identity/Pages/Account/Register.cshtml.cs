@@ -135,7 +135,7 @@ public class RegisterModel : PageModel
         }
         catch
         {
-            throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " + $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor, or alternatively " + $"override the register page in /Areas/Identity/Pages/Account/Register.cshtml");
+            throw new InvalidOperationException($"Не удалось создать экземпляр '{nameof(ApplicationUser)}'. " + $"Убедитесь, что '{nameof(ApplicationUser)}' не абстрактный класс и имеет конструктор без параметров, либо переопределите страницу регистрации.");
         }
     }
 
@@ -156,12 +156,12 @@ public class RegisterModel : PageModel
     public class InputModel
     {
         [Required]
-        [Display(Name = "UserName")]
+        [Display(Name = "Логин")]
         public string UserName { get; set; }
 
         [Required]
         [EmailAddress]
-        [Display(Name = "Email")]
+        [Display(Name = "Почта")]
         public string Email { get; set; }
 
         /// <summary>
@@ -169,9 +169,9 @@ public class RegisterModel : PageModel
         /// directly from your code. This API may change or be removed in future releases.
         /// </summary>
         [Required]
-        [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+        [StringLength(100, ErrorMessage = "Поле {0} должно быть длиной от {2} до {1} символов.", MinimumLength = 6)]
         [DataType(DataType.Password)]
-        [Display(Name = "Password")]
+        [Display(Name = "Пароль")]
         public string Password { get; set; }
 
         /// <summary>
@@ -179,8 +179,8 @@ public class RegisterModel : PageModel
         /// directly from your code. This API may change or be removed in future releases.
         /// </summary>
         [DataType(DataType.Password)]
-        [Display(Name = "Confirm password")]
-        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+        [Display(Name = "Повтор пароля")]
+        [Compare("Password", ErrorMessage = "Пароль и подтверждение не совпадают.")]
         public string ConfirmPassword { get; set; }
     }
 }

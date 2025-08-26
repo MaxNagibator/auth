@@ -55,7 +55,7 @@ public class ExternalLoginsModel : PageModel
 
         if (user == null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound($"Не удалось загрузить пользователя с ID '{_userManager.GetUserId(User)}'.");
         }
 
         CurrentLogins = await _userManager.GetLoginsAsync(user);
@@ -81,19 +81,19 @@ public class ExternalLoginsModel : PageModel
 
         if (user == null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound($"Не удалось загрузить пользователя с ID '{_userManager.GetUserId(User)}'.");
         }
 
         var result = await _userManager.RemoveLoginAsync(user, loginProvider, providerKey);
 
         if (!result.Succeeded)
         {
-            StatusMessage = "The external login was not removed.";
+            StatusMessage = "Внешняя учётная запись не удалена.";
             return RedirectToPage();
         }
 
         await _signInManager.RefreshSignInAsync(user);
-        StatusMessage = "The external login was removed.";
+        StatusMessage = "Внешняя учётная запись удалена.";
         return RedirectToPage();
     }
 
@@ -114,7 +114,7 @@ public class ExternalLoginsModel : PageModel
 
         if (user == null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound($"Не удалось загрузить пользователя с ID '{_userManager.GetUserId(User)}'.");
         }
 
         var userId = await _userManager.GetUserIdAsync(user);
@@ -122,21 +122,21 @@ public class ExternalLoginsModel : PageModel
 
         if (info == null)
         {
-            throw new InvalidOperationException("Unexpected error occurred loading external login info.");
+            throw new InvalidOperationException("Неожиданная ошибка при загрузке данных внешнего входа.");
         }
 
         var result = await _userManager.AddLoginAsync(user, info);
 
         if (!result.Succeeded)
         {
-            StatusMessage = "The external login was not added. External logins can only be associated with one account.";
+            StatusMessage = "Не удалось добавить внешнюю учётную запись. Её можно привязать только к одному аккаунту.";
             return RedirectToPage();
         }
 
         // Clear the existing external cookie to ensure a clean login process
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
-        StatusMessage = "The external login was added.";
+        StatusMessage = "Внешняя учётная запись добавлена.";
         return RedirectToPage();
     }
 }

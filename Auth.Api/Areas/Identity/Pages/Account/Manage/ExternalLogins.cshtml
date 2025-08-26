@@ -2,7 +2,7 @@
 @using Microsoft.AspNetCore.Authentication
 @model ExternalLoginsModel
 @{
-    ViewData["Title"] = "Manage your external logins";
+    ViewData["Title"] = "Внешние входы";
     ViewData["ActivePage"] = ManageNavPages.ExternalLogins;
 }
 
@@ -10,7 +10,7 @@
          for="StatusMessage" />
 @if (Model.CurrentLogins?.Count > 0)
 {
-    <h3>Registered Logins</h3>
+    <h3>Подключённые входы</h3>
     <table class="table">
         <tbody>
         @foreach (UserLoginInfo? login in Model.CurrentLogins)
@@ -32,7 +32,7 @@
                                        type="hidden" />
                                 <button type="submit"
                                         class="btn btn-primary"
-                                        title="Remove this @login.ProviderDisplayName login from your account">Remove
+                                        title="Удалить вход @login.ProviderDisplayName из аккаунта">Удалить
                                 </button>
                             </div>
                         </form>
@@ -49,7 +49,7 @@
 }
 @if (Model.OtherLogins?.Count > 0)
 {
-    <h4>Add another service to log in.</h4>
+    <h4>Добавить другой сервис для входа.</h4>
     <hr />
 
     <form id="link-login-form"
@@ -65,7 +65,7 @@
                             class="btn btn-primary"
                             name="provider"
                             value="@provider.Name"
-                            title="Log in using your @provider.DisplayName account">@provider.DisplayName</button>
+                            title="Войти через @provider.DisplayName">@provider.DisplayName</button>
                 }
             </p>
         </div>

@@ -32,6 +32,7 @@ public class EmailModel : PageModel
     /// This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
     /// directly from your code. This API may change or be removed in future releases.
     /// </summary>
+    [Display(Name = "Почта")]
     public string Email { get; set; }
 
     /// <summary>
@@ -60,7 +61,7 @@ public class EmailModel : PageModel
 
         if (user == null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound($"Не удалось загрузить пользователя с ID '{_userManager.GetUserId(User)}'.");
         }
 
         await LoadAsync(user);
@@ -73,7 +74,7 @@ public class EmailModel : PageModel
 
         if (user == null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound($"Не удалось загрузить пользователя с ID '{_userManager.GetUserId(User)}'.");
         }
 
         if (!ModelState.IsValid)
@@ -101,14 +102,14 @@ public class EmailModel : PageModel
                 Request.Scheme);
 
             await _emailSender.SendEmailAsync(Input.NewEmail,
-                "Confirm your email",
-                $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                "Подтверждение почты",
+                $"Подтвердите аккаунт: <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>перейдите по ссылке</a>.");
 
-            StatusMessage = "Confirmation link to change email sent. Please check your email.";
+            StatusMessage = "Ссылка для смены почты отправлена. Проверьте почту.";
             return RedirectToPage();
         }
 
-        StatusMessage = "Your email is unchanged.";
+        StatusMessage = "Почта не изменена.";
         return RedirectToPage();
     }
 
@@ -118,7 +119,7 @@ public class EmailModel : PageModel
 
         if (user == null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound($"Не удалось загрузить пользователя с ID '{_userManager.GetUserId(User)}'.");
         }
 
         if (!ModelState.IsValid)
@@ -143,10 +144,10 @@ public class EmailModel : PageModel
             Request.Scheme);
 
         await _emailSender.SendEmailAsync(email,
-            "Confirm your email",
-            $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+            "Подтверждение почты",
+            $"Подтвердите аккаунт: <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>перейдите по ссылке</a>.");
 
-        StatusMessage = "Verification email sent. Please check your email.";
+        StatusMessage = "Письмо с подтверждением отправлено. Проверьте почту.";
         return RedirectToPage();
     }
 
@@ -175,7 +176,7 @@ public class EmailModel : PageModel
         /// </summary>
         [Required]
         [EmailAddress]
-        [Display(Name = "New email")]
+        [Display(Name = "Новая почта")]
         public string NewEmail { get; set; }
     }
 }

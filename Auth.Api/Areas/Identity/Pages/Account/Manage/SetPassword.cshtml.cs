@@ -41,7 +41,7 @@ public class SetPasswordModel : PageModel
 
         if (user == null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound($"Не удалось загрузить пользователя с ID '{_userManager.GetUserId(User)}'.");
         }
 
         var hasPassword = await _userManager.HasPasswordAsync(user);
@@ -65,7 +65,7 @@ public class SetPasswordModel : PageModel
 
         if (user == null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound($"Не удалось загрузить пользователя с ID '{_userManager.GetUserId(User)}'.");
         }
 
         var addPasswordResult = await _userManager.AddPasswordAsync(user, Input.NewPassword);
@@ -81,7 +81,7 @@ public class SetPasswordModel : PageModel
         }
 
         await _signInManager.RefreshSignInAsync(user);
-        StatusMessage = "Your password has been set.";
+        StatusMessage = "Пароль установлен.";
 
         return RedirectToPage();
     }
@@ -97,9 +97,9 @@ public class SetPasswordModel : PageModel
         /// directly from your code. This API may change or be removed in future releases.
         /// </summary>
         [Required]
-        [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+        [StringLength(100, ErrorMessage = "Длина {0} должна быть от {2} до {1} символов.", MinimumLength = 6)]
         [DataType(DataType.Password)]
-        [Display(Name = "New password")]
+        [Display(Name = "Новый пароль")]
         public string NewPassword { get; set; }
 
         /// <summary>
@@ -107,8 +107,8 @@ public class SetPasswordModel : PageModel
         /// directly from your code. This API may change or be removed in future releases.
         /// </summary>
         [DataType(DataType.Password)]
-        [Display(Name = "Confirm new password")]
-        [Compare("NewPassword", ErrorMessage = "The new password and confirmation password do not match.")]
+        [Display(Name = "Повторите новый пароль")]
+        [Compare("NewPassword", ErrorMessage = "Новый пароль и подтверждение не совпадают.")]
         public string ConfirmPassword { get; set; }
     }
 }

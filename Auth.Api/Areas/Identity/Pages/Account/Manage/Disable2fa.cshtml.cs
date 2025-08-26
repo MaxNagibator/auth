@@ -33,7 +33,7 @@ public class Disable2faModel : PageModel
 
         if (user == null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound($"Не удалось загрузить пользователя с ID '{_userManager.GetUserId(User)}'.");
         }
 
         if (!await _userManager.GetTwoFactorEnabledAsync(user))
@@ -50,7 +50,7 @@ public class Disable2faModel : PageModel
 
         if (user == null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound($"Не удалось загрузить пользователя с ID '{_userManager.GetUserId(User)}'.");
         }
 
         var disable2faResult = await _userManager.SetTwoFactorEnabledAsync(user, false);
@@ -61,7 +61,7 @@ public class Disable2faModel : PageModel
         }
 
         _logger.LogInformation("User with ID '{UserId}' has disabled 2fa.", _userManager.GetUserId(User));
-        StatusMessage = "2fa has been disabled. You can reenable 2fa when you setup an authenticator app";
+        StatusMessage = "2FA отключена. Можно включить снова после настройки приложения-аутентификатора.";
         return RedirectToPage("./TwoFactorAuthentication");
     }
 }

@@ -54,7 +54,7 @@ public class RegisterConfirmationModel : PageModel
 
         if (user == null)
         {
-            return NotFound($"Unable to load user with email '{email}'.");
+            return NotFound($"Не удалось найти пользователя с почтой '{email}'.");
         }
 
         Email = email;
