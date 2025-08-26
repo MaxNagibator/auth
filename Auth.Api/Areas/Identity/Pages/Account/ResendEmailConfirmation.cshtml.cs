@@ -6,10 +6,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.WebUtilities;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
-using System.Text.Encodings.Web;
 
 namespace Auth.Api.Areas.Identity.Pages.Account;
 
@@ -32,8 +30,13 @@ public class ResendEmailConfirmationModel : PageModel
     [BindProperty]
     public InputModel Input { get; set; }
 
-    public void OnGet()
+    public void OnGet(string email = null)
     {
+        if (!string.IsNullOrEmpty(email))
+        {
+            Input = new()
+                { Email = email };
+        }
     }
 
     public async Task<IActionResult> OnPostAsync()
@@ -51,25 +54,46 @@ public class ResendEmailConfirmationModel : PageModel
             return Page();
         }
 
-        var userId = await _userManager.GetUserIdAsync(user);
-        var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+        // Check if email is already confirmed
+        if (user.EmailConfirmed)
+        {
+            ModelState.AddModelError(string.Empty, "Ваша почта уже подтверждена.");
+            return Page();
+        }
 
-        var callbackUrl = Url.Page("/Account/ConfirmEmail",
-            null,
-            new
-            {
-                userId,
-                code,
-            },
-            Request.Scheme);
+        // Generate new confirmation code
+        var confirmCode = GetCode(8);
+        user.EmailConfirmCode = confirmCode;
 
-        await _emailSender.SendEmailAsync(Input.Email,
-            "Подтверждение почты",
-            $"Подтвердите аккаунт: <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>перейдите по ссылке</a>.");
+        var result = await _userManager.UpdateAsync(user);
 
-        ModelState.AddModelError(string.Empty, "Письмо отправлено. Проверьте почту.");
+        if (!result.Succeeded)
+        {
+            ModelState.AddModelError(string.Empty, "Ошибка при генерации нового кода.");
+            return Page();
+        }
+
+        // Send email with the new code
+        const string title = "Повторное подтверждение регистрации";
+        var body = $"Здравствуйте, {user.UserName}!\r\nВаш новый код для подтверждения регистрации на сайте bob217.auth:\r\n{confirmCode}";
+
+        await _emailSender.SendEmailAsync(Input.Email, title, body);
+
+        ModelState.AddModelError(string.Empty, "Новый код отправлен. Проверьте почту.");
         return Page();
+    }
+
+    private static string GetCode(int length, string allowedChars = "1234567890")
+    {
+        var result = new StringBuilder(length);
+
+        while (result.Length < length)
+        {
+            var index = Random.Shared.Next(allowedChars.Length);
+            result.Append(allowedChars[index]);
+        }
+
+        return result.ToString();
     }
 
     /// <summary>

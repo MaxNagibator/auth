@@ -18,9 +18,19 @@
                  class="text-danger"
                  role="alert"></div>
             <div class="form-floating mb-3">
-                <input asp-for="Input.Email"
+                <input asp-for="Input.UserName"
                        class="form-control"
                        autocomplete="username"
+                       aria-required="true"
+                       placeholder="username" />
+                <label asp-for="Input.UserName">Логин</label>
+                <span asp-validation-for="Input.UserName"
+                      class="text-danger"></span>
+            </div>
+            <div class="form-floating mb-3">
+                <input asp-for="Input.Email"
+                       class="form-control"
+                       autocomplete="email"
                        aria-required="true"
                        placeholder="name@example.com" />
                 <label asp-for="Input.Email">Почта</label>

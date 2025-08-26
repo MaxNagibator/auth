@@ -6,19 +6,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.WebUtilities;
-using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
-using System.Text.Encodings.Web;
 
 namespace Auth.Api.Areas.Identity.Pages.Account;
 
 // todo вынести
-public class QueueHolder
-{
-    public ConcurrentQueue<SendedMailMessage> MailMessages { get; } = new();
-}
 
 public class RegisterModel : PageModel
 {
@@ -27,21 +20,21 @@ public class RegisterModel : PageModel
     private readonly IUserStore<ApplicationUser> _userStore;
     private readonly IUserEmailStore<ApplicationUser> _emailStore;
     private readonly ILogger<RegisterModel> _logger;
-    private readonly QueueHolder _queueHolder;
+    private readonly IEmailSender _emailSender;
 
     public RegisterModel(
         UserManager<ApplicationUser> userManager,
         IUserStore<ApplicationUser> userStore,
         SignInManager<ApplicationUser> signInManager,
         ILogger<RegisterModel> logger,
-        QueueHolder queueHolder)
+        IEmailSender emailSender)
     {
         _userManager = userManager;
         _userStore = userStore;
         _emailStore = GetEmailStore();
         _signInManager = signInManager;
         _logger = logger;
-        _queueHolder = queueHolder;
+        _emailSender = emailSender;
     }
 
     /// <summary>
@@ -89,7 +82,7 @@ public class RegisterModel : PageModel
 
                 var userId = await _userManager.GetUserIdAsync(user);
 
-                SendEmail(Input.UserName, Input.Email, confirmCode);
+                await SendEmail(Input.UserName, Input.Email, confirmCode);
 
                 return RedirectToPage("RegisterConfirmation", new
                 {
@@ -120,11 +113,11 @@ public class RegisterModel : PageModel
         return result.ToString();
     }
 
-    private void SendEmail(string userName, string email, string confirmCode)
+    private Task SendEmail(string userName, string email, string confirmCode)
     {
         const string Title = "Подтверждение регистрации";
         var body = $"Здравствуйте, {userName}!\r\nВаш код для подтверждения регистрации на сайте bob217.auth:\r\n{confirmCode}";
-        _queueHolder.MailMessages.Enqueue(new(email, Title, body));
+        return _emailSender.SendEmailAsync(Input.Email, Title, body);
     }
 
     private ApplicationUser CreateUser()

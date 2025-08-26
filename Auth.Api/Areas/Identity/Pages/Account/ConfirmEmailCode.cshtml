@@ -1,0 +1,69 @@
+@page
+@model ConfirmEmailCodeModel
+@{
+    ViewData["Title"] = "Подтверждение почты";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="alert alert-info"
+             role="alert">
+            <h5 class="alert-heading">Введите код подтверждения</h5>
+            <p>
+                Мы отправили 8-значный код подтверждения на адрес <strong>@Model.Email</strong>.
+                Введите полученный код ниже.
+            </p>
+        </div>
+
+        <form asp-route-email="@Model.Email"
+              asp-route-returnUrl="@Model.ReturnUrl"
+              method="post">
+            <div asp-validation-summary="All"
+                 class="text-danger"
+                 role="alert"></div>
+
+            <div class="form-floating mb-3">
+                <input asp-for="Input.Code"
+                       class="form-control text-center"
+                       style="font-size: 1.5rem; letter-spacing: 0.5rem; font-family: monospace;"
+                       placeholder="12345678"
+                       maxlength="8"
+                       autocomplete="one-time-code"
+                       autofocus />
+                <label asp-for="Input.Code">Код подтверждения</label>
+                <span asp-validation-for="Input.Code"
+                      class="text-danger"></span>
+            </div>
+
+            <button type="submit"
+                    class="btn btn-primary w-100 mb-3">
+                Подтвердить почту
+            </button>
+        </form>
+
+        <div class="text-center">
+            <p class="text-muted">
+                Не получили код?
+                <a asp-page="./ResendEmailConfirmation"
+                   asp-route-email="@Model.Email">
+                    Отправить повторно
+                </a>
+            </p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById('Input_Code').addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 8) {
+                value = value.substring(0, 8);
+            }
+            e.target.value = value;
+        });
+    </script>
+}

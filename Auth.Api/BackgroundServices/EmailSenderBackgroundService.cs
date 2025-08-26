@@ -1,8 +1,7 @@
-﻿using Auth.Api.Areas.Identity.Pages.Account;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using System.Threading.Channels;
 
-namespace Auth.Api;
+namespace Auth.Api.BackgroundServices;
 
 public class EmailSenderBackgroundService(
     QueueHolder queueHolder,

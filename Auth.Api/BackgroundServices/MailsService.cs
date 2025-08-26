@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Mail;
 
-namespace Auth.Api;
+namespace Auth.Api.BackgroundServices;
 
 public class EmailSenderSettings
 {
@@ -79,4 +79,3 @@ public readonly struct ValueStopwatch
         return new(ticks);
     }
 }
-
