@@ -1,0 +1,59 @@
+@page
+@model GrantsModel
+@{
+    ViewData["Title"] = "Выданные доступы приложений";
+    ViewData["ActivePage"] = ManageNavPages.Grants;
+}
+
+<h3>@ViewData["Title"]</h3>
+
+<partial name="_StatusMessage"
+         model="Model.StatusMessage" />
+
+@if (Model.Grants.Count == 0)
+{
+    <div class="alert alert-info">Пока нет разрешений для приложений.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>Приложение</th>
+                <th>Тип</th>
+                <th>Скопы</th>
+                <th>Создано</th>
+                <th>Статус</th>
+                <th>ClientId</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (GrantsModel.GrantItem grantItem in Model.Grants)
+            {
+                <tr>
+                    <td>@grantItem.ApplicationName</td>
+                    <td>@grantItem.AuthorizationType</td>
+                    <td class="text-break">@grantItem.Scopes</td>
+                    <td>@(grantItem.CreatedAt?.ToLocalTime().ToString("dd-MM-yyyy HH:mm:ss"))</td>
+                    <td>@grantItem.Status</td>
+                    <td>@grantItem.ClientId</td>
+                    <td class="text-end">
+                        <form method="post"
+                              asp-page-handler="Revoke">
+                            <input type="hidden"
+                                   name="Input.AuthorizationId"
+                                   value="@grantItem.AuthorizationId" />
+                            <button type="submit"
+                                    class="btn btn-sm btn-outline-danger"
+                                    onclick="return confirm('Отозвать доступ у @grantItem.ApplicationName?');">Отозвать
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
