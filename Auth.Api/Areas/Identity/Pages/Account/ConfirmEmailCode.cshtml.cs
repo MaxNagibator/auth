@@ -87,9 +87,11 @@ public class ConfirmEmailCodeModel : PageModel
         }
 
         _logger.LogInformation("User {Email} confirmed their email with code", email);
-        StatusMessage = "Почта успешно подтверждена! Теперь вы можете войти в систему.";
+        // Автоматический вход после подтверждения почты
+        await _signInManager.SignInAsync(user, false);
+        StatusMessage = "Почта успешно подтверждена. Вы успешно вошли в систему.";
 
-        return RedirectToPage("./Login", new { ReturnUrl = returnUrl });
+        return LocalRedirect(ReturnUrl);
     }
 
     public class InputModel
