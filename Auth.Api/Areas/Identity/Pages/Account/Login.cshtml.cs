@@ -73,7 +73,7 @@ public class LoginModel : PageModel
         {
             // This doesn't count login failures towards account lockout
             // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-            var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, false);
+            var result = await _signInManager.PasswordSignInAsync(Input.UserName, Input.Password, Input.RememberMe, false);
 
             if (result.Succeeded)
             {
@@ -115,9 +115,8 @@ public class LoginModel : PageModel
         /// directly from your code. This API may change or be removed in future releases.
         /// </summary>
         [Required]
-        [EmailAddress]
-        [Display(Name = "Почта")]
-        public string Email { get; set; }
+        [Display(Name = "Имя пользователя")]
+        public string UserName { get; set; }
 
         /// <summary>
         /// This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
