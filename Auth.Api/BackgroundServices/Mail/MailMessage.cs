@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace Auth.Api.BackgroundServices;
+namespace Auth.Api.BackgroundServices.Mail;
 
 /// <summary>
 /// Электронное письмо.

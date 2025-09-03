@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Mail;
 
-namespace Auth.Api.BackgroundServices;
+namespace Auth.Api.BackgroundServices.Mail;
 
 public class EmailSenderSettings
 {
