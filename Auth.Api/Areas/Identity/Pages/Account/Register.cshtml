@@ -13,75 +13,83 @@
               asp-route-returnUrl="@Model.ReturnUrl"
               method="post">
             <h2>Создать аккаунт.</h2>
-            <hr />
+            <hr/>
             <div asp-validation-summary="ModelOnly"
                  class="text-danger"
-                 role="alert"></div>
+                 role="alert">
+            </div>
             <div class="form-floating mb-3">
                 <input asp-for="Input.UserName"
                        class="form-control"
                        autocomplete="username"
                        aria-required="true"
-                       placeholder="username" />
+                       placeholder="username"/>
                 <label asp-for="Input.UserName">Логин</label>
                 <span asp-validation-for="Input.UserName"
-                      class="text-danger"></span>
+                      class="text-danger">
+                </span>
             </div>
             <div class="form-floating mb-3">
                 <input asp-for="Input.Email"
                        class="form-control"
                        autocomplete="email"
                        aria-required="true"
-                       placeholder="name@example.com" />
+                       placeholder="name@example.com"/>
                 <label asp-for="Input.Email">Почта</label>
                 <span asp-validation-for="Input.Email"
-                      class="text-danger"></span>
+                      class="text-danger">
+                </span>
             </div>
             <div class="form-floating mb-3">
                 <input asp-for="Input.Password"
                        class="form-control"
                        autocomplete="new-password"
                        aria-required="true"
-                       placeholder="password" />
+                       placeholder="password"/>
                 <label asp-for="Input.Password">Пароль</label>
                 <span asp-validation-for="Input.Password"
-                      class="text-danger"></span>
+                      class="text-danger">
+                </span>
             </div>
             <div class="form-floating mb-3">
                 <input asp-for="Input.ConfirmPassword"
                        class="form-control"
                        autocomplete="new-password"
                        aria-required="true"
-                       placeholder="password" />
+                       placeholder="password"/>
                 <label asp-for="Input.ConfirmPassword">Повторите пароль</label>
                 <span asp-validation-for="Input.ConfirmPassword"
-                      class="text-danger"></span>
+                      class="text-danger">
+                </span>
             </div>
             <button id="registerSubmit"
                     type="submit"
-                    class="w-100 btn btn-lg btn-primary">Зарегистрироваться
+                    class="w-100 btn btn-lg btn-primary">
+                Зарегистрироваться
             </button>
         </form>
     </div>
     <div class="col-md-6 col-md-offset-2">
         <section>
             <h3>Зарегистрироваться через другой сервис.</h3>
-            <hr />
+            <hr/>
             @{
                 <form id="external-account"
-                        asp-page="./ExternalLogin"
-                        asp-route-returnUrl="@Model.ReturnUrl"
-                        method="post"
-                        class="form-horizontal">
+                      asp-page="./ExternalLogin"
+                      asp-route-returnUrl="@Model.ReturnUrl"
+                      method="post"
+                      class="form-horizontal">
                     <div>
                         <p>
-                            @foreach (AuthenticationScheme? provider in Model.ExternalLogins!)
+                            @foreach (AuthenticationScheme provider in Model.ExternalLogins)
                             {
                                 <button type="submit"
                                         class="btn btn-primary"
                                         name="provider"
                                         value="@provider.Name"
-                                        title="Войти через @provider.DisplayName">@provider.DisplayName</button>
+                                        title="Войти через @provider.DisplayName">
+                                    @provider.DisplayName
+                                </button>
                             }
                         </p>
                     </div>
@@ -92,5 +100,5 @@
 </div>
 
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    <partial name="_ValidationScriptsPartial"/>
 }
