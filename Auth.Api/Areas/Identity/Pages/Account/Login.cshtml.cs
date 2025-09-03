@@ -1,4 +1,4 @@
-#nullable disable
+﻿#nullable disable
 
 using Auth.Api.Data;
 using Microsoft.AspNetCore.Authentication;
@@ -9,40 +9,19 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Auth.Api.Areas.Identity.Pages.Account;
 
-public class LoginModel : PageModel
+public class LoginModel(
+        ApplicationDbContext applicationDbContext,
+        UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
+        ILogger<LoginModel> logger) : PageModel
 {
-    private readonly SignInManager<ApplicationUser> _signInManager;
-    private readonly ILogger<LoginModel> _logger;
-
-    public LoginModel(SignInManager<ApplicationUser> signInManager, ILogger<LoginModel> logger)
-    {
-        _signInManager = signInManager;
-        _logger = logger;
-    }
-
-    /// <summary>
-    /// This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-    /// directly from your code. This API may change or be removed in future releases.
-    /// </summary>
     [BindProperty]
     public InputModel Input { get; set; }
 
-    /// <summary>
-    /// This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-    /// directly from your code. This API may change or be removed in future releases.
-    /// </summary>
     public IList<AuthenticationScheme> ExternalLogins { get; set; }
 
-    /// <summary>
-    /// This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-    /// directly from your code. This API may change or be removed in future releases.
-    /// </summary>
     public string ReturnUrl { get; set; }
 
-    /// <summary>
-    /// This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-    /// directly from your code. This API may change or be removed in future releases.
-    /// </summary>
     [TempData]
     public string ErrorMessage { get; set; }
 
@@ -58,7 +37,7 @@ public class LoginModel : PageModel
         // Clear the existing external cookie to ensure a clean login process
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
-        ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+        ExternalLogins = (await signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
         ReturnUrl = returnUrl;
     }
@@ -67,17 +46,22 @@ public class LoginModel : PageModel
     {
         returnUrl ??= Url.Content("~/");
 
-        ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+        ExternalLogins = (await signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
         if (ModelState.IsValid)
         {
-            // This doesn't count login failures towards account lockout
-            // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-            var result = await _signInManager.PasswordSignInAsync(Input.UserName, Input.Password, Input.RememberMe, false);
+            var userName = Input.UserName?.ToUpper();
+            var userExists = applicationDbContext.Users.Any(x => x.NormalizedUserName == userName && x.EmailConfirmed);
+            if (!userExists)
+            {
+                ModelState.AddModelError(string.Empty, "Неверный логин или пароль.");
+                return Page();
+            }
 
+            var result = await signInManager.PasswordSignInAsync(Input.UserName, Input.Password, Input.RememberMe, false);
             if (result.Succeeded)
             {
-                _logger.LogInformation("User logged in.");
+                logger.LogInformation("User logged in.");
                 return LocalRedirect(returnUrl);
             }
 
@@ -92,7 +76,7 @@ public class LoginModel : PageModel
 
             if (result.IsLockedOut)
             {
-                _logger.LogWarning("User account locked out.");
+                logger.LogWarning("User account locked out.");
                 return RedirectToPage("./Lockout");
             }
 

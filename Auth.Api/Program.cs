@@ -31,6 +31,7 @@ builder.Services
         options.Password.RequireUppercase = false;
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddUserValidator<CustomUserValidator>()
     .AddDefaultTokenProviders()
     .AddDefaultUI();
 
@@ -122,3 +123,24 @@ app.MapDefaultControllerRoute();
 app.MapRazorPages();
 
 app.Run();
+
+
+
+public class CustomUserValidator : UserValidator<ApplicationUser>
+{
+    public CustomUserValidator(IdentityErrorDescriber? errors = null) : base(errors)
+    {
+    }
+
+    public async Task<IdentityResult> ValidateAsync(UserManager<ApplicationUser> manager, ApplicationUser user)
+    {
+        var result = await base.ValidateAsync(manager, user);
+
+        // Убираем ошибку о duplicate username
+        var errors = result.Errors.Where(e => e.Code != "DuplicateUserName").ToList();
+
+        return errors.Count > 0
+            ? IdentityResult.Failed(errors.ToArray())
+            : IdentityResult.Success;
+    }
+}

@@ -1,4 +1,4 @@
-#nullable disable
+﻿#nullable disable
 
 using Auth.Api.Data;
 using Microsoft.AspNetCore.Authorization;
@@ -21,42 +21,27 @@ public class RegisterConfirmationModel : PageModel
         _sender = sender;
     }
 
-    /// <summary>
-    /// This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-    /// directly from your code. This API may change or be removed in future releases.
-    /// </summary>
+    public string UserId { get; set; }
     public string Email { get; set; }
 
-    /// <summary>
-    /// This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-    /// directly from your code. This API may change or be removed in future releases.
-    /// </summary>
-    public bool DisplayConfirmAccountLink { get; set; }
-
-    /// <summary>
-    /// This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-    /// directly from your code. This API may change or be removed in future releases.
-    /// </summary>
-    public string EmailConfirmationUrl { get; set; }
-
-    public async Task<IActionResult> OnGetAsync(string email, string returnUrl = null)
+    public async Task<IActionResult> OnGetAsync(string userId, string email, string returnUrl = null)
     {
-        if (email == null)
+        if (userId == null)
         {
             return RedirectToPage("/Index");
         }
 
         returnUrl = returnUrl ?? Url.Content("~/");
 
-        var user = await _userManager.FindByEmailAsync(email);
+        var user = await _userManager.FindByIdAsync(userId);
 
         if (user == null)
         {
-            return NotFound($"Не удалось найти пользователя с почтой '{email}'.");
+            return NotFound($"Не удалось найти пользователя");
         }
 
+        UserId = userId;
         Email = email;
-        DisplayConfirmAccountLink = false;
 
         return Page();
     }

@@ -1,5 +1,4 @@
-#nullable disable
-
+﻿
 using Auth.Api.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -15,8 +14,10 @@ public class ConfirmEmailCodeModel : PageModel
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly ILogger<ConfirmEmailCodeModel> _logger;
+    private readonly ApplicationDbContext _context;
 
     public ConfirmEmailCodeModel(
+        ApplicationDbContext context,
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
         ILogger<ConfirmEmailCodeModel> logger)
@@ -24,32 +25,41 @@ public class ConfirmEmailCodeModel : PageModel
         _userManager = userManager;
         _signInManager = signInManager;
         _logger = logger;
+        _context = context;
     }
 
     [BindProperty]
-    public InputModel Input { get; set; }
+    public InputModel? Input { get; set; }
 
-    public string Email { get; set; }
-    public string ReturnUrl { get; set; }
+    public string? UserId { get; set; }
+    public string? Email { get; set; }
+    public string? ReturnUrl { get; set; }
 
     [TempData]
-    public string StatusMessage { get; set; }
+    public string? StatusMessage { get; set; }
 
-    public IActionResult OnGet(string email, string returnUrl = null)
+    public async Task<IActionResult> OnGet(string userId, string? returnUrl = null)
     {
-        if (string.IsNullOrEmpty(email))
+        if (string.IsNullOrEmpty(userId))
         {
             return RedirectToPage("/Index");
         }
 
-        Email = email;
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return RedirectToPage("/Index");
+        }
+
+        UserId = userId;
+        Email = user.Email;
         ReturnUrl = returnUrl ?? Url.Content("~/");
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(string email, string returnUrl = null)
+    public async Task<IActionResult> OnPostAsync(string userId, string? returnUrl = null)
     {
-        Email = email;
+        UserId = userId;
         ReturnUrl = returnUrl ?? Url.Content("~/");
 
         if (!ModelState.IsValid)
@@ -57,15 +67,16 @@ public class ConfirmEmailCodeModel : PageModel
             return Page();
         }
 
-        var user = await _userManager.FindByEmailAsync(email);
-
+        var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
         {
             ModelState.AddModelError(string.Empty, "Пользователь не найден.");
             return Page();
         }
 
-        if (user.EmailConfirmCode != Input.Code)
+        Email = user.Email;
+
+        if (user.EmailConfirmCode != Input?.Code)
         {
             ModelState.AddModelError(string.Empty, "Неверный код подтверждения.");
             return Page();
@@ -86,7 +97,11 @@ public class ConfirmEmailCodeModel : PageModel
             return Page();
         }
 
-        _logger.LogInformation("User {Email} confirmed their email with code", email);
+        var anotherUsers = _context.Users.Where(x => x.EmailConfirmed == false && (x.NormalizedEmail == user.NormalizedEmail || x.NormalizedUserName == user.NormalizedUserName));
+        _context.Users.RemoveRange(anotherUsers);
+        _context.SaveChanges();
+
+        _logger.LogInformation("User {Email} confirmed their email with code", user.Email);
         // Автоматический вход после подтверждения почты
         await _signInManager.SignInAsync(user, false);
         StatusMessage = "Почта успешно подтверждена. Вы успешно вошли в систему.";
@@ -100,6 +115,6 @@ public class ConfirmEmailCodeModel : PageModel
         [Display(Name = "Код подтверждения")]
         [StringLength(8, MinimumLength = 8, ErrorMessage = "Код должен содержать 8 цифр")]
         [RegularExpression(@"^\d{8}$", ErrorMessage = "Код должен содержать только цифры")]
-        public string Code { get; set; }
+        public string? Code { get; set; }
     }
 }
