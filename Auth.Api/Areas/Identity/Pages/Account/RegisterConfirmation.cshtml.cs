@@ -28,7 +28,7 @@ public class RegisterConfirmationModel : PageModel
 
         var user = await _userManager.FindByIdAsync(userId);
 
-        if (user == null)
+        if (user == null || user.EmailConfirmed)
         {
             return NotFound("Не удалось найти пользователя");
         }
