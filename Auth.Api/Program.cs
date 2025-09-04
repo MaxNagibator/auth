@@ -29,6 +29,7 @@ builder.Services
         options.Password.RequireDigit = false;
         options.Password.RequireLowercase = false;
         options.Password.RequireUppercase = false;
+        options.SignIn.RequireConfirmedEmail = true;
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddUserValidator<CustomUserValidator>()
@@ -123,7 +124,6 @@ app.MapDefaultControllerRoute();
 app.MapRazorPages();
 
 app.Run();
-
 
 
 public class CustomUserValidator : UserValidator<ApplicationUser>

@@ -75,36 +75,24 @@
             <h3>Войти через другой сервис.</h3>
             <hr />
             @{
-                if ((Model.ExternalLogins?.Count ?? 0) == 0)
-                {
+                <form id="external-account"
+                      asp-page="./ExternalLogin"
+                      asp-route-returnUrl="@Model.ReturnUrl"
+                      method="post"
+                      class="form-horizontal">
                     <div>
                         <p>
-                            Внешние сервисы входа не настроены. Подробнее в этой <a
-                                href="https://go.microsoft.com/fwlink/?LinkID=532715">статье</a>.
+                            @foreach (AuthenticationScheme? provider in Model.ExternalLogins)
+                            {
+                                <button type="submit"
+                                        class="btn btn-primary"
+                                        name="provider"
+                                        value="@provider.Name"
+                                        title="Войти через @provider.DisplayName">@provider.DisplayName</button>
+                            }
                         </p>
                     </div>
-                }
-                else
-                {
-                    <form id="external-account"
-                          asp-page="./ExternalLogin"
-                          asp-route-returnUrl="@Model.ReturnUrl"
-                          method="post"
-                          class="form-horizontal">
-                        <div>
-                            <p>
-                                @foreach (AuthenticationScheme? provider in Model.ExternalLogins!)
-                                {
-                                    <button type="submit"
-                                            class="btn btn-primary"
-                                            name="provider"
-                                            value="@provider.Name"
-                                            title="Войти через @provider.DisplayName">@provider.DisplayName</button>
-                                }
-                            </p>
-                        </div>
-                    </form>
-                }
+                </form>
             }
         </section>
     </div>
