@@ -61,7 +61,7 @@ public class RegisterModel : PageModel
         var confirmCode = GetCode(8);
         var user = new ApplicationUser
         {
-            EmailConfirmCode = confirmCode
+          EmailConfirmCode = confirmCode
         };
 
         await _userManager.SetEmailAsync(user, Input.Email);

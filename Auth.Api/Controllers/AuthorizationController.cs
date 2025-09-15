@@ -1,4 +1,4 @@
-using Auth.Api.Data;
+﻿using Auth.Api.Data;
 using Auth.Api.Helpers;
 using Auth.Api.ViewModels.Authorization;
 using Microsoft.AspNetCore;

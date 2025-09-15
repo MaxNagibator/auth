@@ -1,4 +1,4 @@
-#nullable disable
+﻿#nullable disable
 
 using Auth.Api.Data;
 using Microsoft.AspNetCore.Authorization;
@@ -35,7 +35,7 @@ public class ResendEmailConfirmationModel : PageModel
         if (!string.IsNullOrEmpty(email))
         {
             Input = new()
-                { Email = email };
+            { Email = email };
         }
     }
 
