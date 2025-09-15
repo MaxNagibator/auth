@@ -1,26 +1,21 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.Extensions.Options;
+using System.Collections.Concurrent;
 using System.Threading.Channels;
 
-namespace Auth.Api.BackgroundServices;
+namespace Auth.Api.BackgroundServices.Mail;
 
 public class EmailSenderBackgroundService(
-    QueueHolder queueHolder,
     IMailsService mailsService,
     ILogger<EmailSenderBackgroundService> logger,
-    IOptions<EmailSenderSettings> options) : BackgroundService
+    IOptions<EmailSenderSettings> options) : BackgroundService, IEmailSender
 {
     private readonly EmailSenderSettings _settings = options.Value;
-    private readonly Channel<SendedMailMessage> _retryChannel = Channel.CreateUnbounded<SendedMailMessage>();
-    private readonly SemaphoreSlim _semaphore = new(Environment.ProcessorCount * 2);
+    
     private PeriodicTimer _timer = null!;
-
-    public override void Dispose()
-    {
-        _timer.Dispose();
-        _semaphore.Dispose();
-        base.Dispose();
-        GC.SuppressFinalize(this);
-    }
+    private readonly ConcurrentQueue<SendedMailMessage> _mailMessages  = new();
+    private readonly SemaphoreSlim _semaphore = new(Environment.ProcessorCount * 2);
+    private readonly Channel<SendedMailMessage> _retryChannel = Channel.CreateUnbounded<SendedMailMessage>();
 
     public override Task StartAsync(CancellationToken cancellationToken)
     {
@@ -34,6 +29,12 @@ public class EmailSenderBackgroundService(
     {
         logger.LogInformation("{Name} останавливается", nameof(EmailSenderBackgroundService));
         return base.StopAsync(cancellationToken);
+    }
+    
+    public Task SendEmailAsync(string email, string subject, string htmlMessage)
+    {
+        _mailMessages.Enqueue(new(email, subject, htmlMessage));
+        return Task.CompletedTask;
     }
 
     public async Task ForceExecuteAsync(CancellationToken cancellationToken)
@@ -79,7 +80,7 @@ public class EmailSenderBackgroundService(
         var batchSize = 0;
         var tasks = new List<Task>();
 
-        while (queueHolder.MailMessages.TryDequeue(out var message))
+        while (_mailMessages.TryDequeue(out var message))
         {
             tasks.Add(ProcessSingleMessageAsync(message, cancellationToken));
 
@@ -106,7 +107,7 @@ public class EmailSenderBackgroundService(
         }
         catch (OperationCanceledException)
         {
-            queueHolder.MailMessages.Enqueue(message);
+            _mailMessages.Enqueue(message);
             logger.LogWarning("Операция отменена, сообщение {MessageId} возвращено в очередь", message.Id);
         }
         catch (Exception exception)
@@ -143,12 +144,20 @@ public class EmailSenderBackgroundService(
         {
             var delay = CalculateRetryDelay(message.RetryCount);
             await Task.Delay(delay, cancellationToken);
-            queueHolder.MailMessages.Enqueue(message);
+            _mailMessages.Enqueue(message);
         }
     }
 
     private TimeSpan CalculateRetryDelay(int retryCount)
     {
         return TimeSpan.FromSeconds(_settings.RetryBaseDelaySeconds * Math.Pow(2, retryCount));
+    }
+    
+    public override void Dispose()
+    {
+        _timer.Dispose();
+        _semaphore.Dispose();
+        base.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

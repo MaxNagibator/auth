@@ -1,5 +1,5 @@
 ﻿using Auth.Api;
-using Auth.Api.BackgroundServices;
+using Auth.Api.BackgroundServices.Mail;
 using Auth.Api.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -29,6 +29,7 @@ builder.Services
         options.Password.RequireDigit = false;
         options.Password.RequireLowercase = false;
         options.Password.RequireUppercase = false;
+        options.SignIn.RequireConfirmedEmail = true;
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddUserValidator<CustomUserValidator>()
@@ -77,14 +78,14 @@ builder.Services.AddOpenIddict()
         options.UseAspNetCore();
     });
 
-builder.Services.AddSingleton<QueueHolder>();
-builder.Services.AddSingleton<IEmailSender>(x => x.GetRequiredService<QueueHolder>());
+builder.Services.AddSingleton<EmailSenderBackgroundService>();
+builder.Services.AddSingleton<IEmailSender>(x => x.GetRequiredService<EmailSenderBackgroundService>());
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection(nameof(SmtpSettings)));
 builder.Services.Configure<EmailSenderSettings>(builder.Configuration.GetSection(nameof(EmailSenderSettings)));
 builder.Services.AddSingleton<IMailsService, MailsService>();
 
 builder.Services.AddHostedService<Worker>();
-builder.Services.AddHostedService<EmailSenderBackgroundService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<EmailSenderBackgroundService>());
 
 var app = builder.Build();
 
@@ -123,7 +124,6 @@ app.MapDefaultControllerRoute();
 app.MapRazorPages();
 
 app.Run();
-
 
 
 public class CustomUserValidator : UserValidator<ApplicationUser>
