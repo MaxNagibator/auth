@@ -1,4 +1,5 @@
 ﻿using Auth.Api.Data;
+using Auth.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -9,9 +10,9 @@ namespace Auth.Api.Areas.Identity.Pages.Account;
 [AllowAnonymous]
 public class RegisterConfirmationModel : PageModel
 {
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ApplicationUserManager _userManager;
 
-    public RegisterConfirmationModel(UserManager<ApplicationUser> userManager)
+    public RegisterConfirmationModel(ApplicationUserManager userManager)
     {
         _userManager = userManager;
     }
@@ -27,15 +28,14 @@ public class RegisterConfirmationModel : PageModel
         }
 
         var user = await _userManager.FindByIdAsync(userId);
-
-        if (user == null || user.EmailConfirmed)
+        if (user == null)
         {
             return NotFound("Не удалось найти пользователя");
         }
 
         UserId = userId;
-        Email = user.Email!;
-
+        Email = user.Email;
+        
         return Page();
     }
 }

@@ -1,31 +1,28 @@
 ﻿using Auth.Api.Data;
+using Auth.Api.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
-using System.Text;
 
 namespace Auth.Api.Areas.Identity.Pages.Account;
 
 public class RegisterModel : PageModel
 {
     private readonly SignInManager<ApplicationUser> _signInManager;
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ApplicationUserManager _userManager;
     private readonly ILogger<RegisterModel> _logger;
-    private readonly IEmailSender _emailSender;
 
     public RegisterModel(
-        UserManager<ApplicationUser> userManager,
+        ApplicationUserManager userManager,
         SignInManager<ApplicationUser> signInManager,
-        ILogger<RegisterModel> logger,
-        IEmailSender emailSender)
+        ILogger<RegisterModel> logger)
     {
         _userManager = userManager;
         _signInManager = signInManager;
+
         _logger = logger;
-        _emailSender = emailSender;
     }
 
     [BindProperty]
@@ -51,62 +48,24 @@ public class RegisterModel : PageModel
             return Page();
         }
 
-        var existingUser = await _userManager.FindByEmailAsync(Input.Email);
-        if (existingUser is { EmailConfirmed: true })
-        {
-            ModelState.AddModelError(string.Empty, "Почта занята");
-            return Page();
-        }
-
-        var confirmCode = GetCode(8);
-        var user = new ApplicationUser
-        {
-          EmailConfirmCode = confirmCode
-        };
-
-        await _userManager.SetEmailAsync(user, Input.Email);
-        await _userManager.SetUserNameAsync(user, Input.UserName);
-        var result = await _userManager.CreateAsync(user, Input.Password);
-
-        if (result.Succeeded)
+        var createResult = await _userManager.RegisterUserAsync(Input.UserName, Input.Email, Input.Password);
+        if (createResult.TempUser != null)
         {
             _logger.LogInformation("User created a new account with password.");
-            
-            await SendEmail(Input.UserName, Input.Email, confirmCode);
+
             return RedirectToPage("RegisterConfirmation", new
             {
-                userId = user.Id,
+                userId = createResult.TempUser.Id,
                 returnUrl,
             });
         }
 
-        foreach (var error in result.Errors)
+        foreach (var error in createResult.Result.Errors)
         {
             ModelState.AddModelError(string.Empty, error.Description);
         }
 
         return Page();
-    }
-
-    private static string GetCode(int length, string allowedChars = "1234567890")
-    {
-        var result = new StringBuilder(length);
-
-        while (result.Length < length)
-        {
-            var index = Random.Shared.Next(allowedChars.Length);
-            result.Append(allowedChars[index]);
-        }
-
-        return result.ToString();
-    }
-
-    private Task SendEmail(string userName, string email, string confirmCode)
-    {
-        const string title = "Подтверждение регистрации";
-        var body =
-            $"Здравствуйте, {userName}!\r\nВаш код для подтверждения регистрации на сайте bob217.auth:\r\n{confirmCode}";
-        return _emailSender.SendEmailAsync(email, title, body);
     }
 
     public class InputModel
