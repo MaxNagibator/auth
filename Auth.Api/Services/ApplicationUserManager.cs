@@ -88,6 +88,7 @@ public class ApplicationUserManager
 
     public async Task<ApplicationUser?> ConfirmEmail(string userId, string code)
     {
+        // todo добавить интервал между попытками
         var tempUser = await _dbContext.TempApplicationUsers.FindAsync(userId);
         if (tempUser == null || tempUser.EmailConfirmCode != code)
             return null;
@@ -104,7 +105,10 @@ public class ApplicationUserManager
         applicationUser.EmailConfirmed = true;
 
         await _userManager.UpdateAsync(applicationUser);
-        await _dbContext.TempApplicationUsers.Where(u => u.Email == tempUser.Email).ExecuteDeleteAsync();
+        // todo покрасивее ту ловеры можно обыграть
+        await _dbContext.TempApplicationUsers
+            .Where(u => u.Email.ToLower() == tempUser.Email.ToLower() || u.UserName.ToLower() == tempUser.UserName.ToLower())
+            .ExecuteDeleteAsync();
 
         return applicationUser;
     }
@@ -124,9 +128,9 @@ public class ApplicationUserManager
 
     private Task SendVerificationMail(string userName, string email, string confirmCode)
     {
-        const string title = "Подтверждение регистрации";
+        const string title = "Подтверждение регистрации bob217.auth";
         var body =
-            $"Здравствуйте, {userName}!\r\nВаш код для подтверждения регистрации на сайте bob217.auth:\r\n{confirmCode}";
+            $"Здравствуйте, {userName}!\r\nВаш код для подтверждения регистрации на сайте:\r\n{confirmCode}";
 
         return _emailSender.SendEmailAsync(email, title, body);
     }
