@@ -17,9 +17,10 @@
             </p>
         </div>
 
-        <form asp-route-email="@Model.Email"
-              asp-route-returnUrl="@Model.ReturnUrl"
-              method="post">
+        <form
+            asp-route-userid="@Model.UserId"
+            asp-route-returnUrl="@Model.ReturnUrl"
+            method="post">
             <div asp-validation-summary="All"
                  class="text-danger"
                  role="alert"></div>
@@ -31,7 +32,7 @@
                        placeholder="12345678"
                        maxlength="8"
                        autocomplete="one-time-code"
-                       autofocus />
+                       autofocus/>
                 <label asp-for="Input.Code">Код подтверждения</label>
                 <span asp-validation-for="Input.Code"
                       class="text-danger"></span>
@@ -56,7 +57,7 @@
 </div>
 
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    <partial name="_ValidationScriptsPartial"/>
     <script>
         document.getElementById('Input_Code').addEventListener('input', function (e) {
             let value = e.target.value.replace(/\D/g, '');

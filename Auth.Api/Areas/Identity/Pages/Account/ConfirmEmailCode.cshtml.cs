@@ -1,5 +1,5 @@
-﻿
-using Auth.Api.Data;
+﻿using Auth.Api.Data;
+using Auth.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -11,25 +11,21 @@ namespace Auth.Api.Areas.Identity.Pages.Account;
 [AllowAnonymous]
 public class ConfirmEmailCodeModel : PageModel
 {
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ApplicationUserManager _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
-    private readonly ILogger<ConfirmEmailCodeModel> _logger;
-    private readonly ApplicationDbContext _context;
 
     public ConfirmEmailCodeModel(
         ApplicationDbContext context,
-        UserManager<ApplicationUser> userManager,
+        ApplicationUserManager userManager,
         SignInManager<ApplicationUser> signInManager,
         ILogger<ConfirmEmailCodeModel> logger)
     {
         _userManager = userManager;
         _signInManager = signInManager;
-        _logger = logger;
-        _context = context;
     }
 
     [BindProperty]
-    public InputModel? Input { get; set; }
+    public InputModel Input { get; set; } = null!;
 
     public string? UserId { get; set; }
     public string? Email { get; set; }
@@ -51,9 +47,10 @@ public class ConfirmEmailCodeModel : PageModel
             return RedirectToPage("/Index");
         }
 
-        UserId = userId;
+        UserId = user.Id;
         Email = user.Email;
         ReturnUrl = returnUrl ?? Url.Content("~/");
+
         return Page();
     }
 
@@ -62,50 +59,21 @@ public class ConfirmEmailCodeModel : PageModel
         UserId = userId;
         ReturnUrl = returnUrl ?? Url.Content("~/");
 
-        if (!ModelState.IsValid)
+        if (!ModelState.IsValid || string.IsNullOrEmpty(Input.Code))
         {
             return Page();
         }
 
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user == null)
-        {
-            ModelState.AddModelError(string.Empty, "Пользователь не найден.");
-            return Page();
-        }
-
-        Email = user.Email;
-
-        if (user.EmailConfirmCode != Input?.Code)
+        var confirmedUser = await _userManager.ConfirmEmail(userId, Input.Code);
+        if (confirmedUser == null)
         {
             ModelState.AddModelError(string.Empty, "Неверный код подтверждения.");
             return Page();
         }
 
-        user.EmailConfirmed = true;
-        user.EmailConfirmCode = null;
-
-        var result = await _userManager.UpdateAsync(user);
-
-        if (!result.Succeeded)
-        {
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError(string.Empty, error.Description);
-            }
-
-            return Page();
-        }
-
-        var anotherUsers = _context.Users.Where(x => x.EmailConfirmed == false && (x.NormalizedEmail == user.NormalizedEmail || x.NormalizedUserName == user.NormalizedUserName));
-        _context.Users.RemoveRange(anotherUsers);
-        _context.SaveChanges();
-
-        _logger.LogInformation("User {Email} confirmed their email with code", user.Email);
-        // Автоматический вход после подтверждения почты
-        await _signInManager.SignInAsync(user, false);
         StatusMessage = "Почта успешно подтверждена. Вы успешно вошли в систему.";
 
+        await _signInManager.SignInAsync(confirmedUser, false);
         return LocalRedirect(ReturnUrl);
     }
 
