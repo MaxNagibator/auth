@@ -45,7 +45,7 @@ public class AuthorizationController : Controller
         var request = HttpContext.GetOpenIddictServerRequest() ?? throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
         var result = await HttpContext.AuthenticateAsync();
-
+         
         if (result == null || !result.Succeeded || request.HasPrompt(Prompts.Login) || request.MaxAge != null && result.Properties?.IssuedUtc != null && DateTimeOffset.UtcNow - result.Properties.IssuedUtc > TimeSpan.FromSeconds(request.MaxAge.Value))
         {
             if (request.HasPrompt(Prompts.None))

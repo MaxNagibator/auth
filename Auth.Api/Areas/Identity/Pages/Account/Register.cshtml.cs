@@ -53,7 +53,7 @@ public class RegisterModel : PageModel
         {
             _logger.LogInformation("User created a new account with password.");
 
-            return RedirectToPage("RegisterConfirmation", new
+            return RedirectToPage("ConfirmEmailCode", new
             {
                 userId = createResult.TempUser.Id,
                 returnUrl,

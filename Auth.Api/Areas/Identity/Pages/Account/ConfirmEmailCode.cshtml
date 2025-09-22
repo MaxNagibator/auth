@@ -1,4 +1,4 @@
-@page
+﻿@page
 @model ConfirmEmailCodeModel
 @{
     ViewData["Title"] = "Подтверждение почты";
@@ -17,10 +17,9 @@
             </p>
         </div>
 
-        <form
-            asp-route-userid="@Model.UserId"
-            asp-route-returnUrl="@Model.ReturnUrl"
-            method="post">
+        <form asp-route-userid="@Model.UserId"
+              asp-route-returnUrl="@Model.ReturnUrl"
+              method="post">
             <div asp-validation-summary="All"
                  class="text-danger"
                  role="alert"></div>
@@ -28,12 +27,11 @@
             <div class="form-floating mb-3">
                 <input asp-for="Input.Code"
                        class="form-control text-center"
-                       style="font-size: 1.5rem; letter-spacing: 0.5rem; font-family: monospace;"
+                       style="font-size: 1.5rem; letter-spacing: 0.5rem; font-family: monospace;padding-top: .625rem; padding-bottom: .625rem;"
                        placeholder="12345678"
                        maxlength="8"
                        autocomplete="one-time-code"
-                       autofocus/>
-                <label asp-for="Input.Code">Код подтверждения</label>
+                       autofocus />
                 <span asp-validation-for="Input.Code"
                       class="text-danger"></span>
             </div>
@@ -45,19 +43,32 @@
         </form>
 
         <div class="text-center">
-            <p class="text-muted">
-                Не получили код?
-                <a asp-page="./ResendEmailConfirmation"
-                   asp-route-email="@Model.Email">
+            <form method="post" asp-page-handler="ResendEmailConfirmation">
+                <input type="hidden" name="userId" value="@Model.UserId" />
+                <button type="submit" class="btn btn-link p-0">
                     Отправить повторно
-                </a>
-            </p>
+                </button>
+            </form>
+            @if(Model.ResendMessage != null)
+            {
+                <div class="alert alert-info"
+                     role="alert">
+                    <h5 class="alert-heading">@Model.ResendMessage</h5>
+                </div>
+            }
+            @if (Model.ResendFailMessage != null)
+            {
+                <div class="alert alert-warning"
+                     role="alert">
+                    <h5 class="alert-heading">@Model.ResendFailMessage</h5>
+                </div>
+            }
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <partial name="_ValidationScriptsPartial"/>
+    <partial name="_ValidationScriptsPartial" />
     <script>
         document.getElementById('Input_Code').addEventListener('input', function (e) {
             let value = e.target.value.replace(/\D/g, '');

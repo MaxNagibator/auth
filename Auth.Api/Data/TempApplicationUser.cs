@@ -19,11 +19,13 @@ public class TempApplicationUser
     
     [MaxLength(64)]
     [PersonalData]
-    public string EmailConfirmCode { get; set; }
+    public string? EmailConfirmCode { get; set; }
     
     [PersonalData]
     public string ApplicationUserId { get; set; }
-    
+
+    public DateTime? EmailConfirmCodeDate { get; set; }
+
     public TempApplicationUser()
     {
         Id = Guid.NewGuid().ToString();

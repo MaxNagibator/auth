@@ -31,8 +31,13 @@ public class ConfirmEmailCodeModel : PageModel
     public string? Email { get; set; }
     public string? ReturnUrl { get; set; }
 
-    [TempData]
+    //[TempData]
     public string? StatusMessage { get; set; }
+
+    //[TempData]
+    public string? ResendMessage { get; set; }
+    //[TempData]
+    public string? ResendFailMessage { get; set; }
 
     public async Task<IActionResult> OnGet(string userId, string? returnUrl = null)
     {
@@ -75,6 +80,32 @@ public class ConfirmEmailCodeModel : PageModel
 
         await _signInManager.SignInAsync(confirmedUser, false);
         return LocalRedirect(ReturnUrl);
+    }
+
+    public async Task<IActionResult> OnPostResendEmailConfirmationAsync(string userId, string? returnUrl = null)
+    {
+        ResendMessage = null;
+        ResendFailMessage = null;
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return RedirectToPage("/Index");
+        }
+
+        UserId = userId;
+        ReturnUrl = returnUrl ?? Url.Content("~/");
+
+        var message = await _userManager.ResendVerificationMail(user.Id);
+        if (message == null)
+        {
+            ResendMessage = "Новый код отправлен. Проверьте почту.";
+        }
+        else
+        {
+            ResendFailMessage = message;
+        }
+        return Page();
     }
 
     public class InputModel

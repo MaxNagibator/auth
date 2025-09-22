@@ -74,9 +74,9 @@ public class ApplicationUserManager
         {
             Email = email,
             UserName = userName,
-            EmailConfirmCode = GetCode(8),
             ApplicationUserId = user.Id,
         };
+        SetCode(tempUser);
 
         _dbContext.TempApplicationUsers.Add(tempUser);
 
@@ -88,7 +88,7 @@ public class ApplicationUserManager
 
     public async Task<ApplicationUser?> ConfirmEmail(string userId, string code)
     {
-        // todo добавить интервал между попытками
+        // todo добавить интервал между попытками !!!
         var tempUser = await _dbContext.TempApplicationUsers.FindAsync(userId);
         if (tempUser == null || tempUser.EmailConfirmCode != code)
             return null;
@@ -113,22 +113,37 @@ public class ApplicationUserManager
         return applicationUser;
     }
 
-    public async Task<bool> ResendVerificationMail(string email)
+    public async Task<string?> ResendVerificationMail(string userId)
     {
-        var tempUser = await _dbContext.TempApplicationUsers.FirstOrDefaultAsync(u => u.Email == email);
+        var tempUser = await _dbContext.TempApplicationUsers.FirstOrDefaultAsync(u => u.Id == userId);
         if (tempUser == null)
-            return false;
+            return null;
 
-        tempUser.EmailConfirmCode = GetCode(8);
+        if (tempUser.EmailConfirmCodeDate != null)
+        {
+            var sec = 60 - (int)(DateTime.UtcNow - tempUser.EmailConfirmCodeDate.Value).TotalSeconds;
+            if (sec > 0)
+            {
+                return $"Повторно отправить код можно через {sec} секунд.";
+            }
+        }
+
+        SetCode(tempUser);
         await _dbContext.SaveChangesAsync();
 
         await SendVerificationMail(tempUser.UserName, tempUser.Email, tempUser.EmailConfirmCode);
-        return true;
+        return null;
+    }
+
+    private static void SetCode(TempApplicationUser? tempUser)
+    {
+        tempUser.EmailConfirmCodeDate = DateTime.UtcNow;
+        tempUser.EmailConfirmCode = GetCode(8);
     }
 
     private Task SendVerificationMail(string userName, string email, string confirmCode)
     {
-        const string title = "Подтверждение регистрации bob217.auth";
+        const string title = "Подтверждение регистрации BOB.ID"; // todo BOB.ID -> вынести в настройку
         var body =
             $"Здравствуйте, {userName}!\r\nВаш код для подтверждения регистрации на сайте:\r\n{confirmCode}";
 
