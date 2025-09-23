@@ -15,37 +15,19 @@
             <div asp-validation-summary="All"
                  class="text-danger"
                  role="alert"></div>
-            @if (Model.IsEmailConfirmed)
-            {
-                <div class="form-floating mb-3 input-group">
-                    <input asp-for="Email"
-                           class="form-control"
-                           placeholder="Введите почту"
-                           disabled />
-                    <div class="input-group-append">
-                        <span class="h-100 input-group-text text-success font-weight-bold" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">✓</span>
-                    </div>
-                    <label asp-for="Email"
-                           class="form-label"></label>
+            <div class="form-floating mb-3 input-group">
+                <input asp-for="Email"
+                        class="form-control"
+                        placeholder="Введите почту"
+                        disabled />
+                <div class="input-group-append">
+                    <span class="h-100 input-group-text text-success font-weight-bold" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">✓</span>
                 </div>
-            }
-            else
-            {
-                <div class="form-floating mb-3">
-                    <input asp-for="Email"
-                           class="form-control"
-                           placeholder="Введите почту"
-                           disabled />
-                    <label asp-for="Email"
-                           class="form-label"></label>
-                    <button id="email-verification"
-                            type="submit"
-                            asp-page-handler="SendVerificationEmail"
-                            class="btn btn-link">Выслать подтверждение
-                    </button>
-                </div>
-            }
-            <div class="form-floating mb-3">
+                <label asp-for="Email"
+                        class="form-label"></label>
+            </div>
+  
+@*             <div class="form-floating mb-3">
                 <input asp-for="Input.NewEmail"
                        class="form-control"
                        autocomplete="email"
@@ -60,7 +42,7 @@
                     type="submit"
                     asp-page-handler="ChangeEmail"
                     class="w-100 btn btn-lg btn-primary">Изменить почту
-            </button>
+            </button> *@
         </form>
     </div>
 </div>

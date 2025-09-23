@@ -1,4 +1,4 @@
-#nullable disable
+﻿#nullable disable
 
 using Auth.Api.Data;
 using Microsoft.AspNetCore.Identity;
@@ -70,6 +70,7 @@ public class EmailModel : PageModel
 
     public async Task<IActionResult> OnPostChangeEmailAsync()
     {
+        throw new Exception("отключено");
         var user = await _userManager.GetUserAsync(User);
 
         if (user == null)

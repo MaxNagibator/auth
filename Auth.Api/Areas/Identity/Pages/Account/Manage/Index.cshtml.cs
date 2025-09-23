@@ -1,4 +1,4 @@
-#nullable disable
+﻿#nullable disable
 
 using Auth.Api.Data;
 using Microsoft.AspNetCore.Identity;
@@ -57,6 +57,7 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        throw new Exception("отключено");
         var user = await _userManager.GetUserAsync(User);
 
         if (user == null)
@@ -112,7 +113,7 @@ public class IndexModel : PageModel
         /// directly from your code. This API may change or be removed in future releases.
         /// </summary>
         [Phone]
-        [Display(Name = "Телефон")]
+        [Display(Name = "Имя")]
         public string PhoneNumber { get; set; }
     }
 }

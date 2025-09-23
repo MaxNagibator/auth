@@ -1,4 +1,4 @@
-#nullable disable
+﻿#nullable disable
 
 using Auth.Api.Data;
 using Microsoft.AspNetCore.Identity;
@@ -41,6 +41,8 @@ public class ForgotPasswordModel : PageModel
                 // Don't reveal that the user does not exist or is not confirmed
                 return RedirectToPage("./ForgotPasswordConfirmation");
             }
+
+            // todo сделать отправку кода, как при авторизации. редиректим на страницу с вводом кода
 
             // For more information on how to enable account confirmation and password reset please
             // visit https://go.microsoft.com/fwlink/?LinkID=532713

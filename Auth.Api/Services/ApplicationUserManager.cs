@@ -86,16 +86,46 @@ public class ApplicationUserManager
         return (IdentityResult.Success, tempUser);
     }
 
-    public async Task<ApplicationUser?> ConfirmEmail(string userId, string code)
+    public class ConfirmEmailResult
+    {
+        public ApplicationUser? User { get; set; }
+        public bool IsSuccess { get; set; }
+        public string Message { get; set; }
+    }
+
+    public async Task<ConfirmEmailResult> ConfirmEmail(string userId, string code)
     {
         // todo добавить интервал между попытками !!!
         var tempUser = await _dbContext.TempApplicationUsers.FindAsync(userId);
-        if (tempUser == null || tempUser.EmailConfirmCode != code)
-            return null;
+        if (tempUser == null)
+        {
+            return new ConfirmEmailResult { IsSuccess = false, Message = "Неверный код подтверждения." };
+        }
+
+        if (tempUser.IsEmailConfirmCodeBlock)
+        {
+            return new ConfirmEmailResult { IsSuccess = false, Message = "Попытки кончились. Запросите код повторно." };
+        }
+
+        if (tempUser.EmailConfirmCode != code)
+        {
+            tempUser.EmailConfirmCodeAttemt++;
+
+            if (tempUser.EmailConfirmCodeAttemt > 3)
+            {
+                tempUser.IsEmailConfirmCodeBlock = true;
+            }
+
+            await _dbContext.SaveChangesAsync();
+
+            return new ConfirmEmailResult { IsSuccess = false, Message = "Неверный код подтверждения." };
+        }
 
         var applicationUser = await _userManager.FindByIdAsync(tempUser.ApplicationUserId);
         if (applicationUser == null)
-            return null;
+        {
+            throw new Exception("applicationUser is null");
+        }
 
         applicationUser.Email = tempUser.Email;
         applicationUser.UserName = tempUser.UserName;
@@ -110,7 +140,7 @@ public class ApplicationUserManager
             .Where(u => u.Email.ToLower() == tempUser.Email.ToLower() || u.UserName.ToLower() == tempUser.UserName.ToLower())
             .ExecuteDeleteAsync();
 
-        return applicationUser;
+        return new ConfirmEmailResult { IsSuccess = true, User = applicationUser };
     }
 
     public async Task<string?> ResendVerificationMail(string userId)
@@ -139,6 +169,8 @@ public class ApplicationUserManager
     {
         tempUser.EmailConfirmCodeDate = DateTime.UtcNow;
         tempUser.EmailConfirmCode = GetCode(8);
+        tempUser.EmailConfirmCodeAttemt = 0;
+        tempUser.IsEmailConfirmCodeBlock = false;
     }
 
     private Task SendVerificationMail(string userName, string email, string confirmCode)

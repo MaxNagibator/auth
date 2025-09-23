@@ -26,6 +26,10 @@ public class TempApplicationUser
 
     public DateTime? EmailConfirmCodeDate { get; set; }
 
+    public int EmailConfirmCodeAttemt { get; set; }
+
+    public bool IsEmailConfirmCodeBlock { get; set; }
+
     public TempApplicationUser()
     {
         Id = Guid.NewGuid().ToString();

@@ -69,16 +69,16 @@ public class ConfirmEmailCodeModel : PageModel
             return Page();
         }
 
-        var confirmedUser = await _userManager.ConfirmEmail(userId, Input.Code);
-        if (confirmedUser == null)
+        var confirmEmailResult = await _userManager.ConfirmEmail(userId, Input.Code);
+        if (confirmEmailResult.IsSuccess == false)
         {
-            ModelState.AddModelError(string.Empty, "Неверный код подтверждения.");
+            ModelState.AddModelError(string.Empty, confirmEmailResult.Message);
             return Page();
         }
 
         StatusMessage = "Почта успешно подтверждена. Вы успешно вошли в систему.";
 
-        await _signInManager.SignInAsync(confirmedUser, false);
+        await _signInManager.SignInAsync(confirmEmailResult.User, false);
         return LocalRedirect(ReturnUrl);
     }
 
