@@ -1,10 +1,12 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.Extensions.Options
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - BobGroup.Auth</title>
+    @inject IOptions<ServiceInfoSettings> ServiceInfo
+    <title>@ViewData["Title"] - @ServiceInfo.Value.DisplayName</title>
     <link rel="stylesheet"
           href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet"
@@ -20,7 +22,7 @@
                 <a class="navbar-brand"
                    asp-area=""
                    asp-controller="Home"
-                   asp-action="Index">BOB.ID</a>
+                   asp-action="Index">@ServiceInfo.Value.DisplayName</a>
                 <button class="navbar-toggler"
                         type="button"
                         data-toggle="collapse"
@@ -32,7 +34,7 @@
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
-                @*         <li class="nav-item">
+                        @*         <li class="nav-item">
                             <a class="nav-link text-dark"
                                asp-area=""
                                asp-controller="Home"
@@ -57,7 +59,7 @@
         </main>
     </div>
 
-@*     <footer class="border-top footer text-muted">
+    @*     <footer class="border-top footer text-muted">
         <div class="container">
             &copy; 2025 - Auth.Api - <a asp-area=""
                                         asp-controller="Home"
