@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace Auth.Api.BackgroundServices.Mail;
+namespace Auth.Api.Services.Mail;
 
 /// <summary>
 /// Электронное письмо.
@@ -9,7 +9,7 @@ namespace Auth.Api.BackgroundServices.Mail;
 /// <param name="title">Заголовок письма.</param>
 /// <param name="body">Тело письма.</param>
 [method: SetsRequiredMembers]
-public class SendedMailMessage(string email, string title, string body)
+public sealed class SendedMailMessage(string email, string title, string body)
 {
     /// <summary>
     /// Идентификатор.

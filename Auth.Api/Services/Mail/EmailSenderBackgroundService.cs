@@ -1,21 +1,22 @@
-﻿using Microsoft.AspNetCore.Identity.UI.Services;
+﻿using Auth.Api.Helpers;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
 using System.Threading.Channels;
 
-namespace Auth.Api.BackgroundServices.Mail;
+namespace Auth.Api.Services.Mail;
 
-public class EmailSenderBackgroundService(
+public sealed class EmailSenderBackgroundService(
     IMailsService mailsService,
     ILogger<EmailSenderBackgroundService> logger,
     IOptions<EmailSenderSettings> options) : BackgroundService, IEmailSender
 {
     private readonly EmailSenderSettings _settings = options.Value;
-    
-    private PeriodicTimer _timer = null!;
-    private readonly ConcurrentQueue<SendedMailMessage> _mailMessages  = new();
+    private readonly ConcurrentQueue<SendedMailMessage> _mailMessages = new();
     private readonly SemaphoreSlim _semaphore = new(Environment.ProcessorCount * 2);
     private readonly Channel<SendedMailMessage> _retryChannel = Channel.CreateUnbounded<SendedMailMessage>();
+
+    private PeriodicTimer _timer = null!;
 
     public override Task StartAsync(CancellationToken cancellationToken)
     {
@@ -30,7 +31,15 @@ public class EmailSenderBackgroundService(
         logger.LogInformation("{Name} останавливается", nameof(EmailSenderBackgroundService));
         return base.StopAsync(cancellationToken);
     }
-    
+
+    public override void Dispose()
+    {
+        _timer.Dispose();
+        _semaphore.Dispose();
+        base.Dispose();
+        GC.SuppressFinalize(this);
+    }
+
     public Task SendEmailAsync(string email, string subject, string htmlMessage)
     {
         _mailMessages.Enqueue(new(email, subject, htmlMessage));
@@ -151,13 +160,5 @@ public class EmailSenderBackgroundService(
     private TimeSpan CalculateRetryDelay(int retryCount)
     {
         return TimeSpan.FromSeconds(_settings.RetryBaseDelaySeconds * Math.Pow(2, retryCount));
-    }
-    
-    public override void Dispose()
-    {
-        _timer.Dispose();
-        _semaphore.Dispose();
-        base.Dispose();
-        GC.SuppressFinalize(this);
     }
 }

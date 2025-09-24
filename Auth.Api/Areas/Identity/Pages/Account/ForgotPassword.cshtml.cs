@@ -1,82 +1,134 @@
-﻿#nullable disable
-
 using Auth.Api.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.WebUtilities;
 using System.ComponentModel.DataAnnotations;
-using System.Text;
-using System.Text.Encodings.Web;
+using System.Globalization;
+using System.Security.Cryptography;
 
 namespace Auth.Api.Areas.Identity.Pages.Account;
 
-public class ForgotPasswordModel : PageModel
+internal static class PasswordResetDefaults
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly IEmailSender _emailSender;
+    public const string LoginProvider = "PasswordReset";
+    public const string TokenName = "EmailVerificationCode";
+    public const int CodeLength = 8;
+    public const string TimestampTokenName = "EmailVerificationCodeTimestamp";
+    public const string AttemptTokenName = "EmailVerificationCodeAttempts";
+    public const string EmailSubject = "Сброс пароля";
+    public const int MaxAttempts = 5;
 
-    public ForgotPasswordModel(UserManager<ApplicationUser> userManager, IEmailSender emailSender)
+    public static readonly TimeSpan ResendCooldown = TimeSpan.FromMinutes(1);
+    public static readonly TimeSpan CodeLifetime = TimeSpan.FromMinutes(10);
+
+    public static string GenerateCode()
     {
-        _userManager = userManager;
-        _emailSender = emailSender;
+        const string Digits = "0123456789";
+
+        var buffer = new byte[CodeLength];
+        RandomNumberGenerator.Fill(buffer);
+
+        var chars = new char[CodeLength];
+        for (var i = 0; i < CodeLength; i++)
+        {
+            chars[i] = Digits[buffer[i] % Digits.Length];
+        }
+
+        return new(chars);
     }
 
-    /// <summary>
-    /// This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-    /// directly from your code. This API may change or be removed in future releases.
-    /// </summary>
+    public static string GetCurrentTimestampString()
+    {
+        return DateTime.UtcNow.ToString("O");
+    }
+
+    public static bool TryParseTimestamp(string value, out DateTime timestampUtc)
+    {
+        return DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out timestampUtc);
+    }
+
+    public static TimeSpan GetRemainingCooldown(DateTime sentAtUtc)
+    {
+        var remaining = ResendCooldown - (DateTime.UtcNow - sentAtUtc);
+        return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
+    }
+
+    public static bool IsCodeExpired(DateTime sentAtUtc)
+    {
+        return DateTime.UtcNow - sentAtUtc > CodeLifetime;
+    }
+}
+
+public class ForgotPasswordModel(UserManager<ApplicationUser> userManager, IEmailSender emailSender) : PageModel
+{
     [BindProperty]
-    public InputModel Input { get; set; }
+    public required InputModel Input { get; set; }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (ModelState.IsValid)
+        if (!ModelState.IsValid)
         {
-            var user = await _userManager.FindByEmailAsync(Input.Email);
+            return Page();
+        }
 
-            if (user == null || !await _userManager.IsEmailConfirmedAsync(user))
-            {
-                // Don't reveal that the user does not exist or is not confirmed
-                return RedirectToPage("./ForgotPasswordConfirmation");
-            }
+        var user = await userManager.FindByEmailAsync(Input.Email);
 
-            // todo сделать отправку кода, как при авторизации. редиректим на страницу с вводом кода
+        if (user == null)
+        {
+            return RedirectToPage("./ForgotPasswordCode", new { email = Input.Email });
+        }
 
-            // For more information on how to enable account confirmation and password reset please
-            // visit https://go.microsoft.com/fwlink/?LinkID=532713
-            var code = await _userManager.GeneratePasswordResetTokenAsync(user);
-            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-
-            var callbackUrl = Url.Page("/Account/ResetPassword",
-                null,
-                new { area = "Identity", code },
-                Request.Scheme);
-
-            await _emailSender.SendEmailAsync(Input.Email,
-                "Сброс пароля",
-                $"Сбросьте пароль: <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>перейдите по ссылке</a>.");
-
+        // TODO: Возможно избыточно
+        if (!await userManager.IsEmailConfirmedAsync(user))
+        {
             return RedirectToPage("./ForgotPasswordConfirmation");
         }
 
-        return Page();
+        var timestampToken = await userManager.GetAuthenticationTokenAsync(user,
+            PasswordResetDefaults.LoginProvider,
+            PasswordResetDefaults.TimestampTokenName);
+
+        if (!string.IsNullOrEmpty(timestampToken) && PasswordResetDefaults.TryParseTimestamp(timestampToken, out var lastSentUtc))
+        {
+            var remaining = PasswordResetDefaults.GetRemainingCooldown(lastSentUtc);
+            if (remaining > TimeSpan.Zero)
+            {
+                ModelState.AddModelError(string.Empty,
+                    $"Повторно отправить код можно через {Math.Ceiling(remaining.TotalSeconds)} секунд.");
+
+                return Page();
+            }
+        }
+
+        var verificationCode = PasswordResetDefaults.GenerateCode();
+        await userManager.SetAuthenticationTokenAsync(user,
+            PasswordResetDefaults.LoginProvider,
+            PasswordResetDefaults.TokenName,
+            verificationCode);
+
+        await userManager.SetAuthenticationTokenAsync(user,
+            PasswordResetDefaults.LoginProvider,
+            PasswordResetDefaults.TimestampTokenName,
+            PasswordResetDefaults.GetCurrentTimestampString());
+
+        await userManager.SetAuthenticationTokenAsync(user,
+            PasswordResetDefaults.LoginProvider,
+            PasswordResetDefaults.AttemptTokenName,
+            "0");
+
+        await emailSender.SendEmailAsync(Input.Email,
+            PasswordResetDefaults.EmailSubject,
+            $"Ваш код для сброса пароля: {verificationCode}");
+
+        return RedirectToPage("./ForgotPasswordCode", new { email = Input.Email });
     }
 
-    /// <summary>
-    /// This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-    /// directly from your code. This API may change or be removed in future releases.
-    /// </summary>
     public class InputModel
     {
-        /// <summary>
-        /// This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        /// directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         [Required]
         [EmailAddress]
         [Display(Name = "Почта")]
-        public string Email { get; set; }
+        public required string Email { get; set; }
     }
 }
