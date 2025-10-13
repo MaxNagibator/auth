@@ -12,4 +12,5 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     }
 
     public DbSet<TempApplicationUser> TempApplicationUsers { get; set; }
+    public DbSet<RestorePasswordEmail> RestorePasswordEmails { get; set; }
 }

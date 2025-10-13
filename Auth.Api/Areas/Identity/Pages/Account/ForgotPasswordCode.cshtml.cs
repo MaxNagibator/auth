@@ -1,4 +1,5 @@
-using Auth.Api.Data;
+﻿using Auth.Api.Data;
+using Auth.Api.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,10 @@ using System.Text;
 
 namespace Auth.Api.Areas.Identity.Pages.Account;
 
-public class ForgotPasswordCodeModel(UserManager<ApplicationUser> userManager, IEmailSender emailSender) : PageModel
+public class ForgotPasswordCodeModel(
+    UserManager<ApplicationUser> userManager,
+    IEmailSender emailSender,
+    ApplicationUserManager applicationUserManager) : PageModel
 {
     [BindProperty]
     public required InputModel Input { get; set; }
@@ -26,69 +30,57 @@ public class ForgotPasswordCodeModel(UserManager<ApplicationUser> userManager, I
             return RedirectToPage("./ForgotPassword");
         }
 
-        var user = await userManager.FindByEmailAsync(email);
-        if (user != null && !await userManager.IsEmailConfirmedAsync(user))
-        {
-            return RedirectToPage("./ForgotPassword");
-        }
-
         Input = new()
         {
             Email = email,
         };
 
-        await LoadCooldownAsync(user);
+        GetLastSentUtc(email);
 
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
+        var lastSentUtc = GetLastSentUtc(Input.Email);
+
         if (!ModelState.IsValid)
         {
             var existingUser = await userManager.FindByEmailAsync(Input.Email);
-            await LoadCooldownAsync(existingUser);
             return Page();
         }
 
         var user = await userManager.FindByEmailAsync(Input.Email);
         if (user == null)
         {
+            // todo по коду ошибки по прежнему можно понять есть пользователь с таким ЕМАИЛ или нет на сайте. нужно попытки перенести в таблицу отправки кода
             ModelState.AddModelError(string.Empty, "Неверный код подтверждения.");
-            await LoadCooldownAsync(null);
             return Page();
         }
 
         if (!await userManager.IsEmailConfirmedAsync(user))
         {
             ModelState.AddModelError(string.Empty, "Неверный код подтверждения.");
-            await LoadCooldownAsync(user);
             return Page();
         }
 
         var storedCode = await userManager.GetAuthenticationTokenAsync(user,
             PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.TokenName);
+            PasswordResetDefaults.EmailVerificationCodeTokenName);
 
-        var timestampToken = await userManager.GetAuthenticationTokenAsync(user,
-            PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.TimestampTokenName);
-
-        if (string.IsNullOrWhiteSpace(storedCode) || string.IsNullOrWhiteSpace(timestampToken) || !PasswordResetDefaults.TryParseTimestamp(timestampToken, out var sentAtUtc))
+        if (lastSentUtc == null)
         {
             await ClearPasswordResetTokensAsync(user);
             ResendMessage = "Запросите новый код. Текущий код недоступен.";
             ModelState.AddModelError(string.Empty, ResendMessage);
-            await LoadCooldownAsync(user);
             return Page();
         }
 
-        if (PasswordResetDefaults.IsCodeExpired(sentAtUtc))
+        if (PasswordResetDefaults.IsCodeExpired(lastSentUtc.Value))
         {
             await ClearPasswordResetTokensAsync(user);
             ResendMessage = "Срок действия кода истёк. Запросите новый код.";
             ModelState.AddModelError(string.Empty, ResendMessage);
-            await LoadCooldownAsync(user);
             return Page();
         }
 
@@ -108,7 +100,6 @@ public class ForgotPasswordCodeModel(UserManager<ApplicationUser> userManager, I
                 ModelState.AddModelError(string.Empty, $"Неверный код подтверждения. Осталось попыток: {remainingAttempts}.");
             }
 
-            await LoadCooldownAsync(user);
             return Page();
         }
 
@@ -126,15 +117,28 @@ public class ForgotPasswordCodeModel(UserManager<ApplicationUser> userManager, I
         });
     }
 
+    private DateTime? GetLastSentUtc(string email)
+    {
+        var lastSentUtc = applicationUserManager.GetRestorePasswordDate(email);
+        if (lastSentUtc != null)
+        {
+            CooldownRemainingSeconds = Math.Ceiling(PasswordResetDefaults.GetRemainingCooldown(lastSentUtc.Value).TotalSeconds);
+        }
+
+        return lastSentUtc;
+    }
+
     public async Task<IActionResult> OnPostResendAsync()
     {
-        if (string.IsNullOrWhiteSpace(Input.Email))
+        var email = Input.Email;
+
+        if (string.IsNullOrWhiteSpace(email))
         {
             ModelState.AddModelError(string.Empty, "Заполните данные формы.");
             return Page();
         }
 
-        var email = Input.Email;
+        var lastSentUtc = GetLastSentUtc(email);
         var user = await userManager.FindByEmailAsync(email);
         if (user == null)
         {
@@ -146,30 +150,23 @@ public class ForgotPasswordCodeModel(UserManager<ApplicationUser> userManager, I
                 Code = string.Empty,
             };
 
-            await LoadCooldownAsync(null);
             return Page();
         }
 
         if (!await userManager.IsEmailConfirmedAsync(user))
         {
             ModelState.AddModelError(string.Empty, "Неверный код подтверждения.");
-            await LoadCooldownAsync(user);
             return Page();
         }
 
-        var timestampToken = await userManager.GetAuthenticationTokenAsync(user,
-            PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.TimestampTokenName);
-
-        if (!string.IsNullOrEmpty(timestampToken) && PasswordResetDefaults.TryParseTimestamp(timestampToken, out var lastSentUtc))
+        if (lastSentUtc != null)
         {
-            var remaining = PasswordResetDefaults.GetRemainingCooldown(lastSentUtc);
+            var remaining = PasswordResetDefaults.GetRemainingCooldown(lastSentUtc.Value);
             if (remaining > TimeSpan.Zero)
             {
                 ModelState.AddModelError(string.Empty,
                     $"Повторно отправить код можно через {Math.Ceiling(remaining.TotalSeconds)} секунд.");
 
-                await LoadCooldownAsync(user);
                 return Page();
             }
         }
@@ -177,17 +174,15 @@ public class ForgotPasswordCodeModel(UserManager<ApplicationUser> userManager, I
         var verificationCode = PasswordResetDefaults.GenerateCode();
         await userManager.SetAuthenticationTokenAsync(user,
             PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.TokenName,
+            PasswordResetDefaults.EmailVerificationCodeTokenName,
             verificationCode);
 
-        await userManager.SetAuthenticationTokenAsync(user,
-            PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.TimestampTokenName,
-            PasswordResetDefaults.GetCurrentTimestampString());
+
+        applicationUserManager.SetRestorePasswordDate(email, DateTime.UtcNow);
 
         await userManager.SetAuthenticationTokenAsync(user,
             PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.AttemptTokenName,
+            PasswordResetDefaults.EmailVerificationCodeAttemptsTokenName,
             "0");
 
         await emailSender.SendEmailAsync(email,
@@ -202,35 +197,23 @@ public class ForgotPasswordCodeModel(UserManager<ApplicationUser> userManager, I
             Code = string.Empty,
         };
 
-        await LoadCooldownAsync(user);
-
         return Page();
     }
 
-    private async Task LoadCooldownAsync(ApplicationUser? user)
-    {
-        if (user == null)
-        {
-            // TODO: Уязвимость
-            CooldownRemainingSeconds = Math.Ceiling(PasswordResetDefaults.ResendCooldown.TotalSeconds);
-            return;
-        }
-
-        var timestampToken = await userManager.GetAuthenticationTokenAsync(user,
-            PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.TimestampTokenName);
-
-        if (!string.IsNullOrEmpty(timestampToken) && PasswordResetDefaults.TryParseTimestamp(timestampToken, out var lastSentUtc))
-        {
-            CooldownRemainingSeconds = Math.Ceiling(PasswordResetDefaults.GetRemainingCooldown(lastSentUtc).TotalSeconds);
-        }
-    }
+    //private async Task LoadCooldownAsync(string email)
+    //{
+    //    var lastSentUtc = applicationUserManager.GetRestorePasswordDate(email);
+    //    if (lastSentUtc != null)
+    //    {
+    //        CooldownRemainingSeconds = Math.Ceiling(PasswordResetDefaults.GetRemainingCooldown(lastSentUtc.Value).TotalSeconds);
+    //    }
+    //}
 
     private async Task<int> IncrementAttemptAsync(ApplicationUser user)
     {
         var attemptsToken = await userManager.GetAuthenticationTokenAsync(user,
             PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.AttemptTokenName);
+            PasswordResetDefaults.EmailVerificationCodeAttemptsTokenName);
 
         var attempts = 0;
         if (!string.IsNullOrEmpty(attemptsToken)
@@ -243,7 +226,7 @@ public class ForgotPasswordCodeModel(UserManager<ApplicationUser> userManager, I
 
         await userManager.SetAuthenticationTokenAsync(user,
             PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.AttemptTokenName,
+            PasswordResetDefaults.EmailVerificationCodeAttemptsTokenName,
             attempts.ToString(CultureInfo.InvariantCulture));
 
         return attempts;
@@ -253,15 +236,13 @@ public class ForgotPasswordCodeModel(UserManager<ApplicationUser> userManager, I
     {
         await userManager.RemoveAuthenticationTokenAsync(user,
             PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.TokenName);
+            PasswordResetDefaults.EmailVerificationCodeTokenName);
+
+        applicationUserManager.SetRestorePasswordDate(user.Email!, null);
 
         await userManager.RemoveAuthenticationTokenAsync(user,
             PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.TimestampTokenName);
-
-        await userManager.RemoveAuthenticationTokenAsync(user,
-            PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.AttemptTokenName);
+            PasswordResetDefaults.EmailVerificationCodeAttemptsTokenName);
     }
 
     public class InputModel

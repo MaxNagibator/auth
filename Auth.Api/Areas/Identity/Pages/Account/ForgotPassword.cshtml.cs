@@ -1,4 +1,5 @@
-using Auth.Api.Data;
+﻿using Auth.Api.Data;
+using Auth.Api.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -12,10 +13,9 @@ namespace Auth.Api.Areas.Identity.Pages.Account;
 internal static class PasswordResetDefaults
 {
     public const string LoginProvider = "PasswordReset";
-    public const string TokenName = "EmailVerificationCode";
+    public const string EmailVerificationCodeTokenName = "EmailVerificationCode";
     public const int CodeLength = 8;
-    public const string TimestampTokenName = "EmailVerificationCodeTimestamp";
-    public const string AttemptTokenName = "EmailVerificationCodeAttempts";
+    public const string EmailVerificationCodeAttemptsTokenName = "EmailVerificationCodeAttempts";
     public const string EmailSubject = "Сброс пароля";
     public const int MaxAttempts = 5;
 
@@ -60,7 +60,8 @@ internal static class PasswordResetDefaults
     }
 }
 
-public class ForgotPasswordModel(UserManager<ApplicationUser> userManager, IEmailSender emailSender) : PageModel
+public class ForgotPasswordModel(UserManager<ApplicationUser> userManager, IEmailSender emailSender,
+    ApplicationUserManager applicationUserManager) : PageModel
 {
     [BindProperty]
     public required InputModel Input { get; set; }
@@ -72,26 +73,10 @@ public class ForgotPasswordModel(UserManager<ApplicationUser> userManager, IEmai
             return Page();
         }
 
-        var user = await userManager.FindByEmailAsync(Input.Email);
-
-        if (user == null)
+        var lastSentUtc = applicationUserManager.GetRestorePasswordDate(Input.Email);
+        if (lastSentUtc != null)
         {
-            return RedirectToPage("./ForgotPasswordCode", new { email = Input.Email });
-        }
-
-        // TODO: Возможно избыточно
-        if (!await userManager.IsEmailConfirmedAsync(user))
-        {
-            return RedirectToPage("./ForgotPasswordConfirmation");
-        }
-
-        var timestampToken = await userManager.GetAuthenticationTokenAsync(user,
-            PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.TimestampTokenName);
-
-        if (!string.IsNullOrEmpty(timestampToken) && PasswordResetDefaults.TryParseTimestamp(timestampToken, out var lastSentUtc))
-        {
-            var remaining = PasswordResetDefaults.GetRemainingCooldown(lastSentUtc);
+            var remaining = PasswordResetDefaults.GetRemainingCooldown(lastSentUtc.Value);
             if (remaining > TimeSpan.Zero)
             {
                 ModelState.AddModelError(string.Empty,
@@ -101,20 +86,28 @@ public class ForgotPasswordModel(UserManager<ApplicationUser> userManager, IEmai
             }
         }
 
+        applicationUserManager.SetRestorePasswordDate(Input.Email, DateTime.UtcNow);
+
+        var user = await userManager.FindByEmailAsync(Input.Email);
+        if (user == null)
+        {
+            return RedirectToPage("./ForgotPasswordCode", new { email = Input.Email });
+        }
+
+        if (!await userManager.IsEmailConfirmedAsync(user))
+        {
+            return RedirectToPage("./ForgotPasswordCode", new { email = Input.Email });
+        }
+
         var verificationCode = PasswordResetDefaults.GenerateCode();
         await userManager.SetAuthenticationTokenAsync(user,
             PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.TokenName,
+            PasswordResetDefaults.EmailVerificationCodeTokenName,
             verificationCode);
 
         await userManager.SetAuthenticationTokenAsync(user,
             PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.TimestampTokenName,
-            PasswordResetDefaults.GetCurrentTimestampString());
-
-        await userManager.SetAuthenticationTokenAsync(user,
-            PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.AttemptTokenName,
+            PasswordResetDefaults.EmailVerificationCodeAttemptsTokenName,
             "0");
 
         await emailSender.SendEmailAsync(Input.Email,

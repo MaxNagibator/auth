@@ -196,6 +196,28 @@ public sealed class ApplicationUserManager(
         return emailSender.SendEmailAsync(email, title, body);
     }
 
+    public DateTime? GetRestorePasswordDate(string email)
+    {
+        var emailLower = email.ToLower();
+        return dbContext.RestorePasswordEmails.FirstOrDefault(x => x.Email == emailLower)?.RestorePasswordDate;
+    }
+
+    public void SetRestorePasswordDate(string email, DateTime? date)
+    {
+        var emailLower = email.ToLower();
+        var row = dbContext.RestorePasswordEmails.FirstOrDefault(x => x.Email == emailLower);
+        if (row == null)
+        {
+            row = new RestorePasswordEmail
+            {
+                Email = emailLower,
+            };
+            dbContext.RestorePasswordEmails.Add(row);
+        }
+        row.RestorePasswordDate = date;
+        dbContext.SaveChanges();
+    }
+
     public sealed class ConfirmEmailResult
     {
         public ApplicationUser? User { get; set; }
