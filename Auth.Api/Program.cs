@@ -1,7 +1,7 @@
 ﻿using Auth.Api;
-using Auth.Api.BackgroundServices.Mail;
 using Auth.Api.Data;
 using Auth.Api.Services;
+using Auth.Api.Services.Mail;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +17,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddDbContextPool<ApplicationDbContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString(nameof(ApplicationDbContext)));
+    options.LogTo(Console.WriteLine);
     options.UseOpenIddict();
 });
 
@@ -87,6 +88,7 @@ builder.Services.AddTransient<ApplicationUserManager>();
 builder.Services.AddSingleton<IMailsService, MailsService>();
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection(nameof(SmtpSettings)));
 builder.Services.Configure<EmailSenderSettings>(builder.Configuration.GetSection(nameof(EmailSenderSettings)));
+builder.Services.Configure<ServiceInfoSettings>(builder.Configuration.GetSection(nameof(ServiceInfoSettings)));
 
 builder.Services.AddSingleton<EmailSenderBackgroundService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<EmailSenderBackgroundService>());

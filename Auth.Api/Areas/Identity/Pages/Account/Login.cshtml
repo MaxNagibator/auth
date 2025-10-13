@@ -18,14 +18,14 @@
                      class="text-danger"
                      role="alert"></div>
                 <div class="form-floating mb-3">
-                    <input asp-for="Input.UserName"
+                    <input asp-for="Input.UserNameOrEmail"
                            class="form-control"
                            autocomplete="username"
                            aria-required="true"
                            placeholder="name@example.com" />
-                    <label asp-for="Input.UserName"
-                           class="form-label">Почта</label>
-                    <span asp-validation-for="Input.UserName"
+                    <label asp-for="Input.UserNameOrEmail"
+                           class="form-label">Логин или почта</label>
+                    <span asp-validation-for="Input.UserNameOrEmail"
                           class="text-danger"></span>
                 </div>
                 <div class="form-floating mb-3">
@@ -78,7 +78,7 @@
                       class="form-horizontal">
                     <div>
                         <p>
-                            @foreach (AuthenticationScheme? provider in Model.ExternalLogins)
+                            @foreach (AuthenticationScheme provider in Model.ExternalLogins)
                             {
                                 <button type="submit"
                                         class="btn btn-primary"

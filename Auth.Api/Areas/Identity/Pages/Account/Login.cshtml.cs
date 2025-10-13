@@ -1,6 +1,4 @@
-﻿#nullable disable
-
-using Auth.Api.Data;
+﻿using Auth.Api.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -11,19 +9,20 @@ namespace Auth.Api.Areas.Identity.Pages.Account;
 
 public class LoginModel(
     SignInManager<ApplicationUser> signInManager,
+    UserManager<ApplicationUser> userManager,
     ILogger<LoginModel> logger) : PageModel
 {
     [BindProperty]
-    public InputModel Input { get; set; }
+    public required InputModel Input { get; set; }
 
-    public IEnumerable<AuthenticationScheme> ExternalLogins { get; set; }
+    public IEnumerable<AuthenticationScheme> ExternalLogins { get; set; } = [];
 
-    public string ReturnUrl { get; set; }
+    public string ReturnUrl { get; set; } = string.Empty;
 
     [TempData]
-    public string ErrorMessage { get; set; }
+    public string? ErrorMessage { get; set; }
 
-    public async Task OnGetAsync(string returnUrl = null)
+    public async Task OnGetAsync(string? returnUrl = null)
     {
         if (!string.IsNullOrEmpty(ErrorMessage))
         {
@@ -38,7 +37,7 @@ public class LoginModel(
         ReturnUrl = returnUrl;
     }
 
-    public async Task<IActionResult> OnPostAsync(string returnUrl = null)
+    public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
     {
         returnUrl ??= Url.Content("~/");
         ExternalLogins = await signInManager.GetExternalAuthenticationSchemesAsync();
@@ -48,7 +47,26 @@ public class LoginModel(
             return Page();
         }
 
-        var result = await signInManager.PasswordSignInAsync(Input.UserName, Input.Password, Input.RememberMe, false);
+        var loginIdentifier = Input.UserNameOrEmail.Trim();
+        if (string.IsNullOrEmpty(loginIdentifier))
+        {
+            ModelState.AddModelError(string.Empty, "Неверный логин или пароль.");
+            return Page();
+        }
+
+        var user = await userManager.FindByNameAsync(loginIdentifier);
+        if (user is null && loginIdentifier.Contains('@', StringComparison.Ordinal))
+        {
+            user = await userManager.FindByEmailAsync(loginIdentifier);
+        }
+
+        if (user is null || string.IsNullOrEmpty(user.UserName))
+        {
+            ModelState.AddModelError(string.Empty, "Неверный логин или пароль.");
+            return Page();
+        }
+
+        var result = await signInManager.PasswordSignInAsync(user.UserName, Input.Password, Input.RememberMe, false);
         if (result.Succeeded)
         {
             logger.LogInformation("User logged in.");
@@ -77,15 +95,15 @@ public class LoginModel(
     public class InputModel
     {
         [Required]
-        [Display(Name = "Имя пользователя")]
-        public string UserName { get; set; }
+        [Display(Name = "Логин или почта")]
+        public required string UserNameOrEmail { get; set; }
 
         [Required]
         [DataType(DataType.Password)]
         [Display(Name = "Пароль")]
-        public string Password { get; set; }
+        public required string Password { get; set; }
 
         [Display(Name = "Запомнить меня")]
-        public bool RememberMe { get; set; }
+        public required bool RememberMe { get; set; }
     }
 }
