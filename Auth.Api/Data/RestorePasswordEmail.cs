@@ -1,10 +1,10 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
 
 namespace Auth.Api.Data;
 
 /// <summary>
-/// Хранение дат отправки кодов для восстановления паролей.
+/// Хранение данных для восстановления паролей.
 /// </summary>
 /// <remarks>
 /// Если привязать дату к учётки, а учётки нету, то у нас уязвимость на "есть ли друг с таким email на нашем сайте".
@@ -17,4 +17,12 @@ public class RestorePasswordEmail
     public string Email { get; set; }
 
     public DateTime? RestorePasswordDate { get; set; }
+
+    [MaxLength(20)]
+    [ProtectedPersonalData]
+    public string? VerificationCode { get; set; }
+
+    public DateTime? CodeExpiresAt { get; set; }
+
+    public int Attempts { get; set; }
 }

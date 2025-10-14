@@ -1,4 +1,4 @@
-﻿using Auth.Api.Data;
+using Auth.Api.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
@@ -165,6 +165,86 @@ public sealed class ApplicationUserManager(
         return null;
     }
 
+    public async Task<DateTime?> GetRestorePasswordDateAsync(string email)
+    {
+        var emailLower = email.ToLower();
+        var row = await dbContext.RestorePasswordEmails.FirstOrDefaultAsync(x => x.Email == emailLower);
+        return row?.RestorePasswordDate;
+    }
+
+    public async Task SetRestorePasswordDateAsync(string email, DateTime? date)
+    {
+        var emailLower = email.ToLower();
+        var entity = await dbContext.RestorePasswordEmails.FirstOrDefaultAsync(x => x.Email == emailLower);
+        if (entity == null)
+        {
+            entity = new()
+            {
+                Email = emailLower,
+            };
+
+            await dbContext.RestorePasswordEmails.AddAsync(entity);
+        }
+
+        entity.RestorePasswordDate = date;
+        await dbContext.SaveChangesAsync();
+    }
+
+    public Task<RestorePasswordEmail?> GetPasswordResetDataAsync(string email)
+    {
+        var emailLower = email.ToLower();
+        return dbContext.RestorePasswordEmails.FirstOrDefaultAsync(x => x.Email == emailLower);
+    }
+
+    public async Task SetVerificationCodeAsync(string email, string code, DateTime expiresAt)
+    {
+        var emailLower = email.ToLower();
+        var entity = await dbContext.RestorePasswordEmails.FirstOrDefaultAsync(x => x.Email == emailLower);
+        if (entity == null)
+        {
+            entity = new()
+            {
+                Email = emailLower,
+            };
+
+            await dbContext.RestorePasswordEmails.AddAsync(entity);
+        }
+
+        entity.VerificationCode = code;
+        entity.CodeExpiresAt = expiresAt;
+        entity.Attempts = 0;
+        entity.RestorePasswordDate = DateTime.UtcNow;
+        await dbContext.SaveChangesAsync();
+    }
+
+    public async Task<int> IncrementVerificationAttemptsAsync(string email)
+    {
+        var emailLower = email.ToLower();
+        var entity = await dbContext.RestorePasswordEmails.FirstOrDefaultAsync(x => x.Email == emailLower);
+        if (entity == null)
+        {
+            return 0;
+        }
+
+        entity.Attempts++;
+        await dbContext.SaveChangesAsync();
+        return entity.Attempts;
+    }
+
+    public async Task ClearVerificationDataAsync(string email)
+    {
+        var emailLower = email.ToLower();
+        var entity = await dbContext.RestorePasswordEmails.FirstOrDefaultAsync(x => x.Email == emailLower);
+        if (entity != null)
+        {
+            entity.VerificationCode = null;
+            entity.CodeExpiresAt = null;
+            entity.Attempts = 0;
+            entity.RestorePasswordDate = null;
+            await dbContext.SaveChangesAsync();
+        }
+    }
+
     private static void SetCode(TempApplicationUser tempUser)
     {
         tempUser.EmailConfirmCodeDate = DateTime.UtcNow;
@@ -194,28 +274,6 @@ public sealed class ApplicationUserManager(
                     """;
 
         return emailSender.SendEmailAsync(email, title, body);
-    }
-
-    public DateTime? GetRestorePasswordDate(string email)
-    {
-        var emailLower = email.ToLower();
-        return dbContext.RestorePasswordEmails.FirstOrDefault(x => x.Email == emailLower)?.RestorePasswordDate;
-    }
-
-    public void SetRestorePasswordDate(string email, DateTime? date)
-    {
-        var emailLower = email.ToLower();
-        var row = dbContext.RestorePasswordEmails.FirstOrDefault(x => x.Email == emailLower);
-        if (row == null)
-        {
-            row = new RestorePasswordEmail
-            {
-                Email = emailLower,
-            };
-            dbContext.RestorePasswordEmails.Add(row);
-        }
-        row.RestorePasswordDate = date;
-        dbContext.SaveChanges();
     }
 
     public sealed class ConfirmEmailResult

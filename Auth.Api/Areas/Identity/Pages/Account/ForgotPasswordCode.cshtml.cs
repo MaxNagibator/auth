@@ -1,4 +1,4 @@
-﻿using Auth.Api.Data;
+using Auth.Api.Data;
 using Auth.Api.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using System.ComponentModel.DataAnnotations;
-using System.Globalization;
 using System.Text;
 
 namespace Auth.Api.Areas.Identity.Pages.Account;
@@ -35,63 +34,44 @@ public class ForgotPasswordCodeModel(
             Email = email,
         };
 
-        GetLastSentUtc(email);
+        await GetLastSentUtcAsync(email);
 
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var lastSentUtc = GetLastSentUtc(Input.Email);
-
         if (!ModelState.IsValid)
         {
-            var existingUser = await userManager.FindByEmailAsync(Input.Email);
             return Page();
         }
 
-        var user = await userManager.FindByEmailAsync(Input.Email);
-        if (user == null)
-        {
-            // todo по коду ошибки по прежнему можно понять есть пользователь с таким ЕМАИЛ или нет на сайте. нужно попытки перенести в таблицу отправки кода
-            ModelState.AddModelError(string.Empty, "Неверный код подтверждения.");
-            return Page();
-        }
+        var resetData = await applicationUserManager.GetPasswordResetDataAsync(Input.Email);
 
-        if (!await userManager.IsEmailConfirmedAsync(user))
+        if (resetData == null || string.IsNullOrEmpty(resetData.VerificationCode))
         {
-            ModelState.AddModelError(string.Empty, "Неверный код подтверждения.");
-            return Page();
-        }
-
-        var storedCode = await userManager.GetAuthenticationTokenAsync(user,
-            PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.EmailVerificationCodeTokenName);
-
-        if (lastSentUtc == null)
-        {
-            await ClearPasswordResetTokensAsync(user);
+            await applicationUserManager.ClearVerificationDataAsync(Input.Email);
             ResendMessage = "Запросите новый код. Текущий код недоступен.";
             ModelState.AddModelError(string.Empty, ResendMessage);
             return Page();
         }
 
-        if (PasswordResetDefaults.IsCodeExpired(lastSentUtc.Value))
+        if (resetData.CodeExpiresAt == null || DateTime.UtcNow > resetData.CodeExpiresAt.Value)
         {
-            await ClearPasswordResetTokensAsync(user);
+            await applicationUserManager.ClearVerificationDataAsync(Input.Email);
             ResendMessage = "Срок действия кода истёк. Запросите новый код.";
             ModelState.AddModelError(string.Empty, ResendMessage);
             return Page();
         }
 
-        if (storedCode != Input.Code)
+        if (resetData.VerificationCode != Input.Code)
         {
-            var attempts = await IncrementAttemptAsync(user);
+            var attempts = await applicationUserManager.IncrementVerificationAttemptsAsync(Input.Email);
             var remainingAttempts = PasswordResetDefaults.MaxAttempts - attempts;
 
             if (remainingAttempts <= 0)
             {
-                await ClearPasswordResetTokensAsync(user);
+                await applicationUserManager.ClearVerificationDataAsync(Input.Email);
                 ResendMessage = "Количество попыток исчерпано. Запросите новый код.";
                 ModelState.AddModelError(string.Empty, ResendMessage);
             }
@@ -103,9 +83,17 @@ public class ForgotPasswordCodeModel(
             return Page();
         }
 
+        var user = await userManager.FindByEmailAsync(Input.Email);
+        if (user == null || !await userManager.IsEmailConfirmedAsync(user))
+        {
+            await applicationUserManager.ClearVerificationDataAsync(Input.Email);
+            ModelState.AddModelError(string.Empty, "Неверный код подтверждения.");
+            return Page();
+        }
+
         var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
 
-        await ClearPasswordResetTokensAsync(user);
+        await applicationUserManager.ClearVerificationDataAsync(Input.Email);
 
         var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(resetToken));
 
@@ -115,17 +103,6 @@ public class ForgotPasswordCodeModel(
             code = encodedToken,
             email = Input.Email,
         });
-    }
-
-    private DateTime? GetLastSentUtc(string email)
-    {
-        var lastSentUtc = applicationUserManager.GetRestorePasswordDate(email);
-        if (lastSentUtc != null)
-        {
-            CooldownRemainingSeconds = Math.Ceiling(PasswordResetDefaults.GetRemainingCooldown(lastSentUtc.Value).TotalSeconds);
-        }
-
-        return lastSentUtc;
     }
 
     public async Task<IActionResult> OnPostResendAsync()
@@ -138,26 +115,7 @@ public class ForgotPasswordCodeModel(
             return Page();
         }
 
-        var lastSentUtc = GetLastSentUtc(email);
-        var user = await userManager.FindByEmailAsync(email);
-        if (user == null)
-        {
-            ResendMessage = "Новый код отправлен. Проверьте почту.";
-            ModelState.Clear();
-            Input = new()
-            {
-                Email = email,
-                Code = string.Empty,
-            };
-
-            return Page();
-        }
-
-        if (!await userManager.IsEmailConfirmedAsync(user))
-        {
-            ModelState.AddModelError(string.Empty, "Неверный код подтверждения.");
-            return Page();
-        }
+        var lastSentUtc = await GetLastSentUtcAsync(email);
 
         if (lastSentUtc != null)
         {
@@ -172,18 +130,11 @@ public class ForgotPasswordCodeModel(
         }
 
         var verificationCode = PasswordResetDefaults.GenerateCode();
-        await userManager.SetAuthenticationTokenAsync(user,
-            PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.EmailVerificationCodeTokenName,
-            verificationCode);
+        var expiresAt = DateTime.UtcNow.Add(PasswordResetDefaults.CodeLifetime);
 
+        await applicationUserManager.SetVerificationCodeAsync(email, verificationCode, expiresAt);
 
-        applicationUserManager.SetRestorePasswordDate(email, DateTime.UtcNow);
-
-        await userManager.SetAuthenticationTokenAsync(user,
-            PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.EmailVerificationCodeAttemptsTokenName,
-            "0");
+        // TODO: Отправка, если пользователя нет в системе
 
         await emailSender.SendEmailAsync(email,
             PasswordResetDefaults.EmailSubject,
@@ -200,49 +151,15 @@ public class ForgotPasswordCodeModel(
         return Page();
     }
 
-    //private async Task LoadCooldownAsync(string email)
-    //{
-    //    var lastSentUtc = applicationUserManager.GetRestorePasswordDate(email);
-    //    if (lastSentUtc != null)
-    //    {
-    //        CooldownRemainingSeconds = Math.Ceiling(PasswordResetDefaults.GetRemainingCooldown(lastSentUtc.Value).TotalSeconds);
-    //    }
-    //}
-
-    private async Task<int> IncrementAttemptAsync(ApplicationUser user)
+    private async Task<DateTime?> GetLastSentUtcAsync(string email)
     {
-        var attemptsToken = await userManager.GetAuthenticationTokenAsync(user,
-            PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.EmailVerificationCodeAttemptsTokenName);
-
-        var attempts = 0;
-        if (!string.IsNullOrEmpty(attemptsToken)
-            && int.TryParse(attemptsToken, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+        var lastSentUtc = await applicationUserManager.GetRestorePasswordDateAsync(email);
+        if (lastSentUtc != null)
         {
-            attempts = parsed;
+            CooldownRemainingSeconds = Math.Ceiling(PasswordResetDefaults.GetRemainingCooldown(lastSentUtc.Value).TotalSeconds);
         }
 
-        attempts++;
-
-        await userManager.SetAuthenticationTokenAsync(user,
-            PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.EmailVerificationCodeAttemptsTokenName,
-            attempts.ToString(CultureInfo.InvariantCulture));
-
-        return attempts;
-    }
-
-    private async Task ClearPasswordResetTokensAsync(ApplicationUser user)
-    {
-        await userManager.RemoveAuthenticationTokenAsync(user,
-            PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.EmailVerificationCodeTokenName);
-
-        applicationUserManager.SetRestorePasswordDate(user.Email!, null);
-
-        await userManager.RemoveAuthenticationTokenAsync(user,
-            PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.EmailVerificationCodeAttemptsTokenName);
+        return lastSentUtc;
     }
 
     public class InputModel
