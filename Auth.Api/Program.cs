@@ -1,4 +1,4 @@
-﻿using Auth.Api;
+using Auth.Api;
 using Auth.Api.Data;
 using Auth.Api.Services;
 using Auth.Api.Services.Mail;
@@ -83,6 +83,7 @@ builder.Services.AddOpenIddict()
     });
 
 builder.Services.AddHostedService<Worker>();
+builder.Services.AddHostedService<PasswordResetCleanupService>();
 builder.Services.AddTransient<ApplicationUserManager>();
 
 builder.Services.AddSingleton<IMailsService, MailsService>();

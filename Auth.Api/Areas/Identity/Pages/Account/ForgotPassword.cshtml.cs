@@ -100,6 +100,10 @@ public class ForgotPasswordModel(
             PasswordResetDefaults.EmailSubject,
             $"Ваш код для сброса пароля: {verificationCode}");
 
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var userAgent = Request.Headers.UserAgent.ToString();
+        await applicationUserManager.SendPasswordResetNotificationAsync(Input.Email, ipAddress, userAgent);
+
         return RedirectToPage("./ForgotPasswordCode", new { email = Input.Email });
     }
 

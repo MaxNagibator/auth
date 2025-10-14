@@ -245,6 +245,113 @@ public sealed class ApplicationUserManager(
         }
     }
 
+    public async Task<int> CleanupExpiredCodesAsync(TimeSpan? olderThan = null)
+    {
+        var cutoffDate = DateTime.UtcNow - (olderThan ?? TimeSpan.FromHours(24));
+
+        var expiredRecords = await dbContext.RestorePasswordEmails
+            .Where(x => x.RestorePasswordDate != null && x.RestorePasswordDate < cutoffDate)
+            .ToListAsync();
+
+        if (expiredRecords.Count > 0)
+        {
+            dbContext.RestorePasswordEmails.RemoveRange(expiredRecords);
+            await dbContext.SaveChangesAsync();
+        }
+
+        return expiredRecords.Count;
+    }
+
+    public async Task<int> CleanupExpiredVerificationCodesAsync()
+    {
+        var now = DateTime.UtcNow;
+
+        var expiredRecords = await dbContext.RestorePasswordEmails
+            .Where(x => x.CodeExpiresAt != null && x.CodeExpiresAt < now)
+            .ToListAsync();
+
+        foreach (var record in expiredRecords)
+        {
+            record.VerificationCode = null;
+            record.CodeExpiresAt = null;
+            record.Attempts = 0;
+        }
+
+        if (expiredRecords.Count > 0)
+        {
+            await dbContext.SaveChangesAsync();
+        }
+
+        return expiredRecords.Count;
+    }
+
+    public Task SendPasswordResetNotificationAsync(string email, string? ipAddress = null, string? userAgent = null)
+    {
+        var title = $"Попытка сброса пароля - {_serviceInfoSettings.DisplayName}";
+        var timestamp = DateTime.UtcNow.ToString("dd.MM.yyyy HH:mm:ss UTC");
+
+        var body = $"""
+                    Здравствуйте!
+
+                    Была зафиксирована попытка сброса пароля для вашего аккаунта.
+
+                    Время: {timestamp}
+                    """;
+
+        if (!string.IsNullOrEmpty(ipAddress))
+        {
+            body += $"\nIP адрес: {ipAddress}";
+        }
+
+        if (!string.IsNullOrEmpty(userAgent))
+        {
+            body += $"\nБраузер: {userAgent}";
+        }
+
+        body += """
+
+
+                Если это были не вы, рекомендуем немедленно сменить пароль через безопасное подключение.
+                Если вы не запрашивали сброс пароля, проигнорируйте это письмо.
+
+                С уважением,
+                Служба безопасности
+                """;
+
+        return emailSender.SendEmailAsync(email, title, body);
+    }
+
+    public Task SendPasswordChangedNotificationAsync(string email, string? ipAddress = null)
+    {
+        var title = $"Пароль успешно изменен - {_serviceInfoSettings.DisplayName}";
+        var timestamp = DateTime.UtcNow.ToString("dd.MM.yyyy HH:mm:ss UTC");
+
+        var body = $"""
+                    Здравствуйте!
+
+                    Ваш пароль был успешно изменен.
+
+                    Время: {timestamp}
+                    """;
+
+        if (!string.IsNullOrEmpty(ipAddress))
+        {
+            body += $"\nIP адрес: {ipAddress}";
+        }
+
+        body += """
+
+
+                Если это были не вы, ваш аккаунт может быть скомпрометирован.
+                Немедленно свяжитесь со службой поддержки.
+
+                С уважением,
+                Служба безопасности
+                """;
+
+        return emailSender.SendEmailAsync(email, title, body);
+    }
+
     private static void SetCode(TempApplicationUser tempUser)
     {
         tempUser.EmailConfirmCodeDate = DateTime.UtcNow;

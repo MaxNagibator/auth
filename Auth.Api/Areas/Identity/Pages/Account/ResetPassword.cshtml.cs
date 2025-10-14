@@ -1,6 +1,5 @@
-#nullable disable
-
 using Auth.Api.Data;
+using Auth.Api.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -10,27 +9,19 @@ using System.Text;
 
 namespace Auth.Api.Areas.Identity.Pages.Account;
 
-public class ResetPasswordModel : PageModel
+public class ResetPasswordModel(
+    UserManager<ApplicationUser> userManager,
+    ApplicationUserManager applicationUserManager)
+    : PageModel
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-
-    public ResetPasswordModel(UserManager<ApplicationUser> userManager)
-    {
-        _userManager = userManager;
-    }
-
-    /// <summary>
-    /// This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-    /// directly from your code. This API may change or be removed in future releases.
-    /// </summary>
     [BindProperty]
-    public InputModel Input { get; set; }
+    public required InputModel Input { get; set; }
 
-    public IActionResult OnGet(string code = null, string email = null)
+    public IActionResult OnGet(string? code = null, string? email = null)
     {
-        if (code == null)
+        if (code == null || email == null)
         {
-            return BadRequest("Для сброса пароля нужен код.");
+            return BadRequest("Для сброса пароля нужен код и почта.");
         }
 
         Input = new()
@@ -49,68 +40,41 @@ public class ResetPasswordModel : PageModel
             return Page();
         }
 
-        var user = await _userManager.FindByEmailAsync(Input.Email);
-
+        var user = await userManager.FindByEmailAsync(Input.Email);
         if (user == null)
         {
-            // Don't reveal that the user does not exist
             return RedirectToPage("./ResetPasswordConfirmation");
         }
 
-        var result = await _userManager.ResetPasswordAsync(user, Input.Code, Input.Password);
-
+        var result = await userManager.ResetPasswordAsync(user, Input.Code, Input.Password);
         if (result.Succeeded)
         {
-            return RedirectToPage("./ResetPasswordConfirmation");
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            await applicationUserManager.SendPasswordChangedNotificationAsync(Input.Email, ipAddress);
         }
 
-        foreach (var error in result.Errors)
-        {
-            ModelState.AddModelError(string.Empty, error.Description);
-        }
-
-        return Page();
+        return RedirectToPage("./ResetPasswordConfirmation");
     }
 
-    /// <summary>
-    /// This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-    /// directly from your code. This API may change or be removed in future releases.
-    /// </summary>
     public class InputModel
     {
-        /// <summary>
-        /// This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        /// directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         [Required]
         [EmailAddress]
         [Display(Name = "Почта")]
-        public string Email { get; set; }
+        public string Email { get; set; } = null!;
 
-        /// <summary>
-        /// This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        /// directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         [Required]
         [StringLength(100, ErrorMessage = "{0} должен быть от {2} до {1} символов.", MinimumLength = 6)]
         [DataType(DataType.Password)]
         [Display(Name = "Пароль")]
-        public string Password { get; set; }
+        public string Password { get; set; } = null!;
 
-        /// <summary>
-        /// This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        /// directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         [DataType(DataType.Password)]
         [Display(Name = "Повторите пароль")]
         [Compare("Password", ErrorMessage = "Пароль и подтверждение не совпадают.")]
-        public string ConfirmPassword { get; set; }
+        public string? ConfirmPassword { get; set; }
 
-        /// <summary>
-        /// This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        /// directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         [Required]
-        public string Code { get; set; }
+        public string Code { get; set; } = null!;
     }
 }
