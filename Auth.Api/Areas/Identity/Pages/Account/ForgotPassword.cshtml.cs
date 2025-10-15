@@ -1,4 +1,4 @@
-﻿using Auth.Api.Data;
+using Auth.Api.Data;
 using Auth.Api.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -60,7 +60,9 @@ internal static class PasswordResetDefaults
     }
 }
 
-public class ForgotPasswordModel(UserManager<ApplicationUser> userManager, IEmailSender emailSender,
+public class ForgotPasswordModel(
+    UserManager<ApplicationUser> userManager,
+    IEmailSender emailSender,
     ApplicationUserManager applicationUserManager) : PageModel
 {
     [BindProperty]
@@ -73,7 +75,7 @@ public class ForgotPasswordModel(UserManager<ApplicationUser> userManager, IEmai
             return Page();
         }
 
-        var lastSentUtc = applicationUserManager.GetRestorePasswordDate(Input.Email);
+        var lastSentUtc = await applicationUserManager.GetRestorePasswordDateAsync(Input.Email);
         if (lastSentUtc != null)
         {
             var remaining = PasswordResetDefaults.GetRemainingCooldown(lastSentUtc.Value);
@@ -86,33 +88,21 @@ public class ForgotPasswordModel(UserManager<ApplicationUser> userManager, IEmai
             }
         }
 
-        applicationUserManager.SetRestorePasswordDate(Input.Email, DateTime.UtcNow);
-
-        var user = await userManager.FindByEmailAsync(Input.Email);
-        if (user == null)
-        {
-            return RedirectToPage("./ForgotPasswordCode", new { email = Input.Email });
-        }
-
-        if (!await userManager.IsEmailConfirmedAsync(user))
-        {
-            return RedirectToPage("./ForgotPasswordCode", new { email = Input.Email });
-        }
+        await userManager.FindByEmailAsync(Input.Email);
 
         var verificationCode = PasswordResetDefaults.GenerateCode();
-        await userManager.SetAuthenticationTokenAsync(user,
-            PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.EmailVerificationCodeTokenName,
-            verificationCode);
+        var expiresAt = DateTime.UtcNow.Add(PasswordResetDefaults.CodeLifetime);
 
-        await userManager.SetAuthenticationTokenAsync(user,
-            PasswordResetDefaults.LoginProvider,
-            PasswordResetDefaults.EmailVerificationCodeAttemptsTokenName,
-            "0");
+        await applicationUserManager.SetVerificationCodeAsync(Input.Email, verificationCode, expiresAt);
 
+        // TODO: Отправка, если пользователя нет в системе
         await emailSender.SendEmailAsync(Input.Email,
             PasswordResetDefaults.EmailSubject,
             $"Ваш код для сброса пароля: {verificationCode}");
+
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var userAgent = Request.Headers.UserAgent.ToString();
+        await applicationUserManager.SendPasswordResetNotificationAsync(Input.Email, ipAddress, userAgent);
 
         return RedirectToPage("./ForgotPasswordCode", new { email = Input.Email });
     }

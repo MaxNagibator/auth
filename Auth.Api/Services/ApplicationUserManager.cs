@@ -1,4 +1,4 @@
-﻿using Auth.Api.Data;
+using Auth.Api.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
@@ -165,6 +165,193 @@ public sealed class ApplicationUserManager(
         return null;
     }
 
+    public async Task<DateTime?> GetRestorePasswordDateAsync(string email)
+    {
+        var emailLower = email.ToLower();
+        var row = await dbContext.RestorePasswordEmails.FirstOrDefaultAsync(x => x.Email == emailLower);
+        return row?.RestorePasswordDate;
+    }
+
+    public async Task SetRestorePasswordDateAsync(string email, DateTime? date)
+    {
+        var emailLower = email.ToLower();
+        var entity = await dbContext.RestorePasswordEmails.FirstOrDefaultAsync(x => x.Email == emailLower);
+        if (entity == null)
+        {
+            entity = new()
+            {
+                Email = emailLower,
+            };
+
+            await dbContext.RestorePasswordEmails.AddAsync(entity);
+        }
+
+        entity.RestorePasswordDate = date;
+        await dbContext.SaveChangesAsync();
+    }
+
+    public Task<RestorePasswordEmail?> GetPasswordResetDataAsync(string email)
+    {
+        var emailLower = email.ToLower();
+        return dbContext.RestorePasswordEmails.FirstOrDefaultAsync(x => x.Email == emailLower);
+    }
+
+    public async Task SetVerificationCodeAsync(string email, string code, DateTime expiresAt)
+    {
+        var emailLower = email.ToLower();
+        var entity = await dbContext.RestorePasswordEmails.FirstOrDefaultAsync(x => x.Email == emailLower);
+        if (entity == null)
+        {
+            entity = new()
+            {
+                Email = emailLower,
+            };
+
+            await dbContext.RestorePasswordEmails.AddAsync(entity);
+        }
+
+        entity.VerificationCode = code;
+        entity.CodeExpiresAt = expiresAt;
+        entity.Attempts = 0;
+        entity.RestorePasswordDate = DateTime.UtcNow;
+        await dbContext.SaveChangesAsync();
+    }
+
+    public async Task<int> IncrementVerificationAttemptsAsync(string email)
+    {
+        var emailLower = email.ToLower();
+        var entity = await dbContext.RestorePasswordEmails.FirstOrDefaultAsync(x => x.Email == emailLower);
+        if (entity == null)
+        {
+            return 0;
+        }
+
+        entity.Attempts++;
+        await dbContext.SaveChangesAsync();
+        return entity.Attempts;
+    }
+
+    public async Task ClearVerificationDataAsync(string email)
+    {
+        var emailLower = email.ToLower();
+        var entity = await dbContext.RestorePasswordEmails.FirstOrDefaultAsync(x => x.Email == emailLower);
+        if (entity != null)
+        {
+            entity.VerificationCode = null;
+            entity.CodeExpiresAt = null;
+            entity.Attempts = 0;
+            entity.RestorePasswordDate = null;
+            await dbContext.SaveChangesAsync();
+        }
+    }
+
+    public async Task<int> CleanupExpiredCodesAsync(TimeSpan? olderThan = null)
+    {
+        var cutoffDate = DateTime.UtcNow - (olderThan ?? TimeSpan.FromHours(24));
+
+        var expiredRecords = await dbContext.RestorePasswordEmails
+            .Where(x => x.RestorePasswordDate != null && x.RestorePasswordDate < cutoffDate)
+            .ToListAsync();
+
+        if (expiredRecords.Count > 0)
+        {
+            dbContext.RestorePasswordEmails.RemoveRange(expiredRecords);
+            await dbContext.SaveChangesAsync();
+        }
+
+        return expiredRecords.Count;
+    }
+
+    public async Task<int> CleanupExpiredVerificationCodesAsync()
+    {
+        var now = DateTime.UtcNow;
+
+        var expiredRecords = await dbContext.RestorePasswordEmails
+            .Where(x => x.CodeExpiresAt != null && x.CodeExpiresAt < now)
+            .ToListAsync();
+
+        foreach (var record in expiredRecords)
+        {
+            record.VerificationCode = null;
+            record.CodeExpiresAt = null;
+            record.Attempts = 0;
+        }
+
+        if (expiredRecords.Count > 0)
+        {
+            await dbContext.SaveChangesAsync();
+        }
+
+        return expiredRecords.Count;
+    }
+
+    public Task SendPasswordResetNotificationAsync(string email, string? ipAddress = null, string? userAgent = null)
+    {
+        var title = $"Попытка сброса пароля - {_serviceInfoSettings.DisplayName}";
+        var timestamp = DateTime.UtcNow.ToString("dd.MM.yyyy HH:mm:ss UTC");
+
+        var body = $"""
+                    Здравствуйте!
+
+                    Была зафиксирована попытка сброса пароля для вашего аккаунта.
+
+                    Время: {timestamp}
+                    """;
+
+        if (!string.IsNullOrEmpty(ipAddress))
+        {
+            body += $"\nIP адрес: {ipAddress}";
+        }
+
+        if (!string.IsNullOrEmpty(userAgent))
+        {
+            body += $"\nБраузер: {userAgent}";
+        }
+
+        body += """
+
+
+                Если это были не вы, рекомендуем немедленно сменить пароль через безопасное подключение.
+                Если вы не запрашивали сброс пароля, проигнорируйте это письмо.
+
+                С уважением,
+                Служба безопасности
+                """;
+
+        return emailSender.SendEmailAsync(email, title, body);
+    }
+
+    public Task SendPasswordChangedNotificationAsync(string email, string? ipAddress = null)
+    {
+        var title = $"Пароль успешно изменен - {_serviceInfoSettings.DisplayName}";
+        var timestamp = DateTime.UtcNow.ToString("dd.MM.yyyy HH:mm:ss UTC");
+
+        var body = $"""
+                    Здравствуйте!
+
+                    Ваш пароль был успешно изменен.
+
+                    Время: {timestamp}
+                    """;
+
+        if (!string.IsNullOrEmpty(ipAddress))
+        {
+            body += $"\nIP адрес: {ipAddress}";
+        }
+
+        body += """
+
+
+                Если это были не вы, ваш аккаунт может быть скомпрометирован.
+                Немедленно свяжитесь со службой поддержки.
+
+                С уважением,
+                Служба безопасности
+                """;
+
+        return emailSender.SendEmailAsync(email, title, body);
+    }
+
     private static void SetCode(TempApplicationUser tempUser)
     {
         tempUser.EmailConfirmCodeDate = DateTime.UtcNow;
@@ -194,28 +381,6 @@ public sealed class ApplicationUserManager(
                     """;
 
         return emailSender.SendEmailAsync(email, title, body);
-    }
-
-    public DateTime? GetRestorePasswordDate(string email)
-    {
-        var emailLower = email.ToLower();
-        return dbContext.RestorePasswordEmails.FirstOrDefault(x => x.Email == emailLower)?.RestorePasswordDate;
-    }
-
-    public void SetRestorePasswordDate(string email, DateTime? date)
-    {
-        var emailLower = email.ToLower();
-        var row = dbContext.RestorePasswordEmails.FirstOrDefault(x => x.Email == emailLower);
-        if (row == null)
-        {
-            row = new RestorePasswordEmail
-            {
-                Email = emailLower,
-            };
-            dbContext.RestorePasswordEmails.Add(row);
-        }
-        row.RestorePasswordDate = date;
-        dbContext.SaveChanges();
     }
 
     public sealed class ConfirmEmailResult
