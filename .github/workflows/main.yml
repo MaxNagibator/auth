@@ -27,12 +27,6 @@ env:
   API_SITE_PATH: 'E:\publish\bob217auth\production\api'
 
 jobs:
-  build:
-    if: ${{ github.event.inputs.tag != 'production' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
   build-and-deploy:
     runs-on:
       labels: BobGroupWindowsServer
@@ -50,7 +44,7 @@ jobs:
       run: dotnet restore ${{ env.API_PROJECT_FILE }}
 
     - name: API Publish
-      run: dotnet publish ${{ env.API_PROJECT_FILE }} -c ${{ github.event.inputs.configuration }} -o ${{ env.API_PUBLISH_FOLDER }}
+      run: dotnet publish ${{ env.API_PROJECT_FILE }} -c ${{ github.event.inputs.configuration }} -o ${{ env.API_PUBLISH_FOLDER }} --verbosity minimal
 
     - name: API Stop IIS Pool 
       run: |

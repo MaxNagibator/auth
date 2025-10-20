@@ -1,4 +1,4 @@
-using Auth.Api.Data;
+﻿using Auth.Api.Data;
 using Auth.Api.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -95,10 +95,13 @@ public class ForgotPasswordModel(
 
         await applicationUserManager.SetVerificationCodeAsync(Input.Email, verificationCode, expiresAt);
 
-        // TODO: Отправка, если пользователя нет в системе
-        await emailSender.SendEmailAsync(Input.Email,
+        var user = await userManager.FindByEmailAsync(Input.Email);
+        if (user != null)
+        {
+            await emailSender.SendEmailAsync(Input.Email,
             PasswordResetDefaults.EmailSubject,
             $"Ваш код для сброса пароля: {verificationCode}");
+        }
 
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
         var userAgent = Request.Headers.UserAgent.ToString();
