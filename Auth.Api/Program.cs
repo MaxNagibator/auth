@@ -1,15 +1,19 @@
-using Auth.Api;
+﻿using Auth.Api;
 using Auth.Api.Data;
 using Auth.Api.Services;
 using Auth.Api.Services.Mail;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
+using NLog.Web;
 using OpenIddict.Abstractions;
 using Quartz;
 using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.ClearProviders();
+builder.Host.UseNLog();
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
